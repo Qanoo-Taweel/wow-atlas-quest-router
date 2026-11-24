@@ -1,0 +1,46 @@
+---
+title: Layers (dependencies only point downwards)
+---
+flowchart TB
+  subgraph UI["UI layer"]
+    Commands["UI/Commands.lua<br/>Command + Chain of Responsibility"]
+    Factory["UI/UserInteractionFactory.lua<br/>Factory Method"]
+    Tracker["UI/TrackerFrame.lua"]
+  end
+  Facade["AtlasQuestRouter.lua<br/>Facade"]
+  subgraph APP["Application"]
+    Planner["Routing/QuestRoutePlanner.lua"]
+    Builder["Routing/WorldGraphBuilder.lua<br/>Builder"]
+  end
+  subgraph DOMAIN["Domain"]
+    QuestLog["Domain/QuestLog.lua<br/>Repository + Observer"]
+    Req["Domain/RequirementSet.lua"]
+    Plan["Domain/RoutePlan.lua"]
+  end
+  subgraph TRAVEL["Travel"]
+    Links["Travel/TravelLinks.lua"]
+    LinkFactory["Travel/TravelLinkFactory.lua<br/>Factory Method"]
+    Rules["Travel/AccessRules.lua<br/>Chain of Responsibility"]
+  end
+  subgraph ATLAS["ATLAS engine (no WoW code)"]
+    Solver["Atlas/AtlasSolver.lua"]
+    Scorer["Atlas/EdgeScorer.lua<br/>Composite + Strategy"]
+    Dag["Atlas/LocalDag.lua"]
+    Classic["Atlas/AtlasClassic.lua<br/>(Java-identical)"]
+  end
+  subgraph CORE["Core"]
+    Graph["Graph/Graph.lua"]
+    Class["Core/Class.lua"]
+    Bus["Core/EventBus.lua"]
+  end
+  Platform["Platform/GameApi.lua<br/>Adapter (only file that reads WoW globals)"]
+  UI --> Facade
+  Facade --> APP
+  Facade --> DOMAIN
+  Facade --> Platform
+  APP --> TRAVEL
+  APP --> ATLAS
+  APP --> DOMAIN
+  ATLAS --> CORE
+  TRAVEL --> CORE
+  DOMAIN --> CORE

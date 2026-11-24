@@ -1,0 +1,53 @@
+## Interface: 11507
+## Title: Atlas Quest Router
+## Notes: Quest tracker that plans the shortest quest route with the ATLAS algorithm (walk, flight paths, boats, zeppelins, tram, portals, hearthstone).
+## Author: Koki (Qanoo-Taweel)
+## Version: 1.0.0
+## SavedVariables: AtlasQuestRouterDB
+## X-Category: Quest
+
+# Core ---------------------------------------------------------------
+Core\Class.lua
+Core\EventBus.lua
+Graph\Graph.lua
+
+# ATLAS (Kabaca, Samir & Takan) ----------------------------------------
+Atlas\LazyArray.lua
+Atlas\DistanceMatrix.lua
+Atlas\ScoreComponents.lua
+Atlas\EdgeScorer.lua
+Atlas\DfsOrderings.lua
+Atlas\LocalDag.lua
+Atlas\AtlasClassic.lua
+Atlas\AtlasSolver.lua
+Atlas\AtlasSolverFactory.lua
+
+# Domain ---------------------------------------------------------------
+Domain\RequirementSet.lua
+Domain\Quest.lua
+Domain\QuestLog.lua
+Domain\RoutePlan.lua
+
+# Data -----------------------------------------------------------------
+Data\WorldData.lua
+Data\QuestData.lua
+
+# Travel + routing -----------------------------------------------------
+Travel\TravelLinks.lua
+Travel\TravelLinkFactory.lua
+Travel\AccessRules.lua
+Routing\EdgeGate.lua
+Routing\LocationResolver.lua
+Routing\WorldGraphBuilder.lua
+Routing\QuestRoutePlanner.lua
+
+# Platform + UI --------------------------------------------------------
+Platform\GameApi.lua
+Platform\Scheduler.lua
+UI\UserInteraction.lua
+UI\TrackerFrame.lua
+UI\UserInteractionFactory.lua
+UI\Commands.lua
+
+# Facade + bootstrap ---------------------------------------------------
+AtlasQuestRouter.lua

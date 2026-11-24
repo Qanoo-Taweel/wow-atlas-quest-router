@@ -1,0 +1,80 @@
+---
+title: AtlasQuestRouter - simplified (hand-drawable, methods kept)
+---
+classDiagram
+direction LR
+class AtlasQuestRouter {
+  <<Facade>>
+  +addQuest(id)
+  +plan()
+  +nextLeg()
+  +runCommand(input)
+  +save() / load()
+}
+class CommandHandler {
+  <<Chain of Responsibility>>
+  +setNext(handler)
+  +handle(verb, args, router)
+  +execute(args, router)
+}
+class UserInteractionFactory {
+  <<Factory Method>>
+  +createInteractions()
+  +createInteraction(kind)
+}
+class UserInteraction {
+  +notify(msg)
+  +showPlan(plan)
+  +showProgress(plan)
+}
+class QuestLog {
+  <<Repository + Observer>>
+  +add(id)
+  +remove(id)
+  +markStepDone(step)
+}
+class QuestRoutePlanner {
+  +plan(profile, quests, start)
+}
+class WorldGraphBuilder {
+  <<Builder>>
+  +addWalkingNetwork()
+  +addFlightNetwork()
+  +addQuestSteps(quests)
+  +result()
+}
+class TravelLinkFactory {
+  <<Factory Method>>
+  +create(mode, from, to)
+}
+class AccessRule {
+  <<Chain of Responsibility>>
+  +setNext(rule)
+  +handle(link, profile)
+}
+class AtlasSolver {
+  <<ATLAS>>
+  +solve(graph, start, req)
+  +extend(graph, start, req)
+}
+class EdgeScorer {
+  <<Composite + Strategy>>
+  +score(edge)
+  +adaptTo(graph)
+}
+class IGameApi {
+  <<Adapter interface>>
+  +playerProfile()
+  +questLogTitles()
+}
+AtlasQuestRouter --> CommandHandler
+AtlasQuestRouter --> UserInteractionFactory
+UserInteractionFactory ..> UserInteraction : creates
+AtlasQuestRouter --> QuestLog
+AtlasQuestRouter --> QuestRoutePlanner
+AtlasQuestRouter --> IGameApi
+QuestRoutePlanner --> WorldGraphBuilder
+QuestRoutePlanner --> AtlasSolver
+WorldGraphBuilder --> TravelLinkFactory
+WorldGraphBuilder --> AccessRule
+AtlasSolver --> EdgeScorer

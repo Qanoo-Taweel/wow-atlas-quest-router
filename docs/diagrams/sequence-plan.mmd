@@ -1,0 +1,35 @@
+---
+title: What happens when the player types /aqr plan
+---
+sequenceDiagram
+autonumber
+actor Player
+participant Slash as SlashCmdList
+participant Chain as CommandHandler chain
+participant Router as AtlasQuestRouter (Facade)
+participant Api as IGameApi (Adapter)
+participant Planner as QuestRoutePlanner
+participant Builder as WorldGraphBuilder
+participant Factory as AtlasSolverFactory
+participant Atlas as AtlasSolver
+participant UI as UserInteractions
+Player->>Slash: /aqr plan
+Slash->>Router: runCommand("plan")
+Router->>Chain: handle("plan", "", router)
+Chain->>Chain: Help? Add? ... no, pass on
+Chain->>Router: PlanCommand.execute -> plan()
+Router->>Api: currentLocationName(), playerProfile()
+Router->>Planner: plan(profile, quests, start)
+Planner->>Builder: reset().addLocations().addWalkingNetwork()...setStart()
+Builder->>Builder: TravelLinkFactory.create + AccessRule chain per link
+Builder-->>Planner: graph + required edges R
+Planner->>Factory: create("quest")
+Factory-->>Planner: AtlasSolver
+loop while R has available edges (one game frame each)
+  Planner->>Atlas: extend(): local DAG -> DP longest path -> best chain
+  Atlas->>Atlas: append chain, mark served steps
+end
+Atlas-->>Planner: tour
+Planner-->>Router: RoutePlan
+Router->>UI: showPlan(plan) on chat + tracker
+UI-->>Player: route in chat and tracker window

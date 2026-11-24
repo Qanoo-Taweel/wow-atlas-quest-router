@@ -1,0 +1,17 @@
+---
+title: ATLAS longest-path extension (paper Algorithm 1) as used by the addon
+---
+flowchart TD
+  A([Start: tour T = start edge]) --> B{Any required edge<br/>still available?}
+  B -- no --> Z([Return tour T])
+  B -- yes --> C[v = last edge of T]
+  C --> D["Iterative DFS from v<br/>(explicit stack, one per DFS ordering)"]
+  D --> E["Reverse post-order = local DAG<br/>back edges dropped (paper 3.1)"]
+  E --> F["DP in topological order:<br/>utility[n] = utility[e] + value(n)<br/>cost[n] = cost[e] + weight(n)<br/>keep max utility - lambda * cost"]
+  F --> G["best = argmax over newly served edges of<br/>Path_Score + 0.001 * score(e)  (eq. 1)"]
+  G --> H{best found?}
+  H -- no --> U["Report remaining steps as unreachable<br/>(drop them and their dependants)"] --> B
+  H -- yes --> I["Backtrack comeFrom, append chain to T"]
+  I --> J["Mark served quest steps<br/>(unlocks next steps of the quest)"]
+  J --> K["Lazy reset of DP arrays (paper 3.4)<br/>yield one frame to the game"]
+  K --> B

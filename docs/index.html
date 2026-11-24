@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas Quest Router</title>
+<meta name="description" content="A World of Warcraft Forever quest tracker addon that plans the shortest quest route with the ATLAS algorithm.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#top"><span class="brand-mark">◈</span> Atlas Quest Router</a>
+  <nav>
+    <a href="#planner">Planner</a>
+    <a href="#atlas">ATLAS</a>
+    <a href="#steps">Step by step</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#diagrams">Diagrams</a>
+    <a href="#install">Install</a>
+    <a class="gh" href="https://github.com/Qanoo-Taweel/wow-atlas-quest-router">GitHub</a>
+  </nav>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">World of Warcraft Forever addon · Lua 5.1</p>
+    <h1>Every quest. One road.<br><span>Planned by ATLAS.</span></h1>
+    <p class="lead">Atlas Quest Router tracks your quests and computes the fastest order to accept, complete and turn them in, across walking paths, flight masters, boats, zeppelins, the tram, class teleports and your hearthstone. The route is built by <strong>ATLAS</strong>, the longest-path arc-routing heuristic of Kabaca, Samir &amp; Takan, and by nothing else.</p>
+    <div class="hero-cta">
+      <a class="btn primary" href="#planner">Plan a quest route</a>
+      <a class="btn" href="#steps">Watch ATLAS think</a>
+    </div>
+    <ul class="hero-stats" id="heroStats"></ul>
+  </div>
+  <div class="hero-card">
+    <div class="tracker-mock">
+      <div class="tm-head"><span>ATLAS Route</span><span id="mockTotal">—</span></div>
+      <ol id="mockLines"></ol>
+      <div class="tm-foot"><span class="tm-btn">Next</span><span class="tm-btn">Re-plan</span><span class="tm-prog" id="mockProg"></span></div>
+    </div>
+    <p class="caption">The in-game tracker window, filled with a live ATLAS plan computed in your browser.</p>
+  </div>
+</section>
+
+<!-- ============================================================ PLANNER -->
+<section id="planner" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Live planner</p>
+    <h2>Plan your session</h2>
+    <p>This page runs a JavaScript port of the addon's planner on the addon's own data. It is checked in CI to produce the same route as the Lua addon, leg for leg.</p>
+  </div>
+  <div class="planner">
+    <aside class="panel controls">
+      <div class="field">
+        <label>Faction</label>
+        <div class="seg" id="factionSeg">
+          <button data-v="Alliance" class="on">Alliance</button>
+          <button data-v="Horde">Horde</button>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="classSel">Class</label>
+          <select id="classSel">
+            <option value="WARRIOR">Warrior</option><option value="PALADIN">Paladin</option><option value="HUNTER">Hunter</option>
+            <option value="ROGUE">Rogue</option><option value="PRIEST">Priest</option><option value="SHAMAN">Shaman</option>
+            <option value="MAGE">Mage (teleports)</option><option value="WARLOCK">Warlock</option><option value="DRUID">Druid (Moonglade)</option>
+          </select></div>
+        <div class="field"><label for="speedSel">Riding</label>
+          <select id="speedSel"><option value="7">On foot</option><option value="11.2">Mount 60%</option><option value="14">Mount 100%</option></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="startSel">Standing in</label><select id="startSel"></select></div>
+        <div class="field"><label for="bindSel">Hearthstone</label><select id="bindSel"></select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="hearthCd"> Hearthstone on cooldown</label>
+      <div class="field">
+        <div class="quest-head"><label>Quests to track</label>
+          <span><button class="link" id="qAll">all</button> · <button class="link" id="qNone">none</button></span></div>
+        <div class="quest-list" id="questList"></div>
+      </div>
+      <button class="btn primary wide" id="planBtn">Plan with ATLAS</button>
+    </aside>
+
+    <div class="map-col">
+      <div class="panel map-panel">
+        <svg id="map" viewBox="0 0 1000 700" role="img" aria-label="Map of Kalimdor and the Eastern Kingdoms with the planned route"></svg>
+        <div class="map-tools">
+          <button class="btn small" id="playBtn">▶ Play route</button>
+          <button class="btn small" id="zoomBtn">Whole world</button>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+      <div class="summary" id="summary"></div>
+    </div>
+  </div>
+  <div class="panel itinerary">
+    <div class="it-head"><h3>Itinerary</h3><span id="itMeta"></span></div>
+    <ol id="itinerary"></ol>
+  </div>
+</section>
+
+<!-- ============================================================ ATLAS -->
+<section id="atlas" class="section">
+  <div class="section-head">
+    <p class="eyebrow">The algorithm</p>
+    <h2>How ATLAS routes your quests</h2>
+    <p>ATLAS was published for covering every edge of a graph at low cost (test generation for finite state machines, then large-scale arc routing). Quest routing is an arc-routing problem: every quest step is a <em>required edge</em> (a self-loop at its location), every road, flight and boat is an ordinary edge with a travel time.</p>
+  </div>
+  <div class="cards4">
+    <article class="card"><span class="num">1</span><h3>Local DAG</h3><p>From the last edge of the tour, an iterative depth-first search (explicit stack) lists every reachable edge. Its reverse post-order is a topological order; edges that point backwards close cycles and are left out for this iteration only.</p><code>paper §3.1, §3.2</code></article>
+    <article class="card"><span class="num">2</span><h3>Longest path DP</h3><p>Walking the DAG in order, each edge inherits the best value of its predecessors: utility grows by one unit for every <em>available</em> quest step, cost grows by the travel time.</p><code>Path_Score = utility − λ·cost</code></article>
+    <article class="card"><span class="num">3</span><h3>Pick the chain</h3><p>The best end edge is the argmax of the path score, with the paper's six-term edge score (required, connectivity, efficiency, savings, regret, proximity) as tie-breaker.</p><code>Algorithm 1, line 15 · eq. (1)</code></article>
+    <article class="card"><span class="num">4</span><h3>Extend and repeat</h3><p>Backtrack <code>comeFrom</code>, append the chain to the tour, mark the quest steps served (which unlocks the next step of each quest), lazily reset the arrays and go again until nothing is left.</p><code>O(|R| · (|V| + |E|))</code></article>
+  </div>
+  <div class="formula panel">
+    <div>
+      <h3>Edge score (Kabaca, Samir &amp; Takan, eq. 1)</h3>
+      <p class="eq">score(e) = 1<sub>e∈R</sub>·1000 + (deg⁺+deg⁻)·0.5 + value/weight·10 + S<sub>CW</sub>(e)·50 + R(e)·100 + P(e)·20</p>
+      <p class="muted">Implemented as a Composite of six Strategy objects (<code>Atlas/ScoreComponents.lua</code>), with the paper's adaptive weights for sparse versus dense graphs.</p>
+    </div>
+    <div>
+      <h3>What the addon adds for a game world</h3>
+      <ul class="ticks">
+        <li><strong>Precedence:</strong> accept → objectives → turn in, and quest chains.</li>
+        <li><strong>Weights in seconds</strong> and a cost penalty λ, so a chain never takes a silly detour.</li>
+        <li><strong>Multi-DAG sampling:</strong> 4 DFS orderings per iteration, ATLAS keeps the best chain.</li>
+        <li><strong>One-use edges:</strong> the hearthstone closes after its first use.</li>
+        <li><strong>One iteration per frame</strong> in a coroutine, so the game never freezes.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="proof panel">
+    <div class="proof-badge">✓</div>
+    <div>
+      <h3>Faithful to the original</h3>
+      <p><code>Atlas/AtlasClassic.lua</code> is a line-by-line port of <a href="https://github.com/savastakan/atlas">savastakan/atlas</a> <code>Atlas.java</code> (including Java's <code>HashSet</code> iteration order). On 7 finite state machines, from the 6-state <code>bbtas</code> benchmark to a 1,000-edge machine, it prints <strong>exactly the same test sequence</strong> as the Java program. The weighted planner, the website and the addon share the same code path and are checked route for route.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ STEP BY STEP -->
+<section id="steps" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Interactive</p>
+    <h2>ATLAS, one iteration at a time</h2>
+    <p>A tiny Elwynn and Westfall with three quests. Step through the algorithm and watch the local DAG, the dynamic programming table and the chosen chain.</p>
+  </div>
+  <div class="viz">
+    <div class="panel viz-map">
+      <svg id="vizSvg" viewBox="0 0 520 420" role="img" aria-label="Small example graph"></svg>
+      <div class="viz-controls">
+        <button class="btn small" id="vizPrev">◀ Back</button>
+        <button class="btn small primary" id="vizNext">Next ▶</button>
+        <button class="btn small" id="vizPlay">Auto-play</button>
+        <span class="viz-pos" id="vizPos"></span>
+      </div>
+    </div>
+    <div class="panel viz-side">
+      <p class="eyebrow" id="vizPhase"></p>
+      <h3 id="vizTitle"></h3>
+      <p id="vizText"></p>
+      <div id="vizDetail"></div>
+      <div class="viz-tour"><span>Tour so far</span><div id="vizTour"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ ARCHITECTURE -->
+<section id="architecture" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Software design</p>
+    <h2>SOLID, with eleven named patterns</h2>
+    <p>Each pattern below lives in a real file and is covered by a test in <code>tests/spec_patterns.lua</code>. The comment at the top of each file explains why it is there.</p>
+  </div>
+  <div class="patterns" id="patterns"></div>
+  <div class="panel solid">
+    <h3>SOLID in this codebase</h3>
+    <table id="solidTable"></table>
+  </div>
+</section>
+
+<!-- ============================================================ DIAGRAMS -->
+<section id="diagrams" class="section">
+  <div class="section-head">
+    <p class="eyebrow">UML</p>
+    <h2>Class and sequence diagrams</h2>
+    <p>Generated from Mermaid sources in <code>docs/diagrams/</code>. The simplified one keeps every important method and fits on one sheet, so it can be drawn by hand.</p>
+  </div>
+  <div class="tabs" id="diagramTabs"></div>
+  <div class="panel diagram-view">
+    <a id="diagramLink" target="_blank" rel="noopener"><img id="diagramImg" alt=""></a>
+    <p class="muted" id="diagramNote"></p>
+  </div>
+</section>
+
+<!-- ============================================================ INSTALL -->
+<section id="install" class="section">
+  <div class="section-head">
+    <p class="eyebrow">Get it</p>
+    <h2>Install and use in game</h2>
+  </div>
+  <div class="install">
+    <ol class="steps panel">
+      <li><strong>Download</strong> the repository (Code → Download ZIP) and unzip it.</li>
+      <li><strong>Copy</strong> the folder <code>AtlasQuestRouter</code> into <code>World of Warcraft/_classic_era_/Interface/AddOns/</code> (the Forever client folder).</li>
+      <li><strong>Check the version:</strong> in game type <code>/dump select(4, GetBuildInfo())</code>. If it differs from <code>11507</code>, put that number on the <code>## Interface:</code> line of <code>AtlasQuestRouter.toc</code>.</li>
+      <li><strong>Enable</strong> “Atlas Quest Router” in the AddOns menu on the character screen.</li>
+      <li>Type <code>/aqr import</code> (or <code>/aqr demo</code>) and then <code>/aqr plan</code>.</li>
+    </ol>
+    <div class="panel commands">
+      <h3>Slash commands</h3>
+      <pre><code>/aqr help              all commands
+/aqr import            track known quests from your log
+/aqr add &lt;id|name&gt;     track one quest
+/aqr remove &lt;id&gt;       stop tracking
+/aqr list | clear
+/aqr plan              ATLAS route from where you stand
+/aqr next              current leg done, show the next
+/aqr show | hide       tracker window
+/aqr from &lt;place&gt;      plan from somewhere else
+/aqr speed foot|60|100 ground speed
+/aqr hearth &lt;place&gt;    where your hearthstone is set
+/aqr demo              sample quests for your faction</code></pre>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <p><strong>Atlas Quest Router</strong> · university assignment by Koki · <a href="https://github.com/Qanoo-Taweel/wow-atlas-quest-router">source on GitHub</a></p>
+  <p>ATLAS: H. Kabaca, A. Samir, S. Takan, “Benchmarking Atlas: A High-Performance Heuristic for Large-Scale Arc Routing Problems” (SSRN 6099031) · reference code <a href="https://github.com/savastakan/atlas">savastakan/atlas</a>.</p>
+  <p class="muted">Fan-made and unofficial; not affiliated with Blizzard Entertainment. Map positions and travel times are approximations made for routing.</p>
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/atlas.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

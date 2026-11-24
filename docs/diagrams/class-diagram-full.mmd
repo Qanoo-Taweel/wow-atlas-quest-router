@@ -1,0 +1,428 @@
+---
+title: AtlasQuestRouter - full class diagram
+---
+classDiagram
+direction TB
+
+%% ===================== Facade =====================
+class AtlasQuestRouter {
+  <<Facade>>
+  -gameApi: IGameApi
+  -questLog: QuestLog
+  -planner: QuestRoutePlanner
+  -resolver: LocationResolver
+  -scheduler: IScheduler
+  -commands: CommandHandler
+  -interactions: Map~kind, IUserInteraction~
+  -currentPlan: RoutePlan
+  +addQuest(idOrName) Quest
+  +removeQuest(id)
+  +listQuests()
+  +clearQuests()
+  +importQuestLog() int
+  +demo()
+  +plan(onDone)
+  +nextLeg() Leg
+  +setStartOverride(text)
+  +setRiding(text)
+  +setBind(text)
+  +setTrackerVisible(bool)
+  +runCommand(input)
+  +save() table
+  +load(saved)
+  +say(message)
+}
+
+%% ===================== Commands (Command + Chain of Responsibility) =====================
+class CommandHandler {
+  <<abstract>>
+  +verbs: string[]
+  +usage: string
+  -nextHandler: CommandHandler
+  +setNext(handler) CommandHandler
+  +canHandle(verb) bool
+  +handle(verb, args, router)
+  +execute(args, router)*
+}
+class HelpCommand
+class AddCommand
+class PlanCommand
+class NextCommand
+class ImportCommand
+class UnknownCommand
+class CommandChain {
+  <<utility>>
+  +default()$ CommandHandler
+  +parse(input)$ verb, args
+}
+CommandHandler <|-- HelpCommand
+CommandHandler <|-- AddCommand
+CommandHandler <|-- PlanCommand
+CommandHandler <|-- NextCommand
+CommandHandler <|-- ImportCommand
+CommandHandler <|-- UnknownCommand
+CommandHandler --> CommandHandler : next
+CommandChain ..> CommandHandler : builds
+AtlasQuestRouter o-- CommandHandler
+
+%% ===================== UI (Factory Method) =====================
+class IUserInteraction {
+  <<interface>>
+  +notify(message)
+  +showPlan(plan, lines)
+  +showProgress(plan, lines)
+}
+class UserInteraction {
+  <<abstract>>
+  +notify(message)*
+  +setVisible(bool)
+}
+class ChatInteraction {
+  -api: IGameApi
+}
+class TrackerInteraction {
+  -frame: Frame
+  +build() Frame
+  +render(plan, lines)
+}
+class HeadlessInteraction {
+  +messages: string[]
+  +plans: table[]
+}
+class UserInteractionFactory {
+  <<abstract creator>>
+  +createInteractions(callbacks) Map
+  #createInteraction(kind)* IUserInteraction
+}
+class WowUserInteractionFactory {
+  +createInteraction(kind) IUserInteraction
+}
+class HeadlessUserInteractionFactory {
+  +createInteraction(kind) IUserInteraction
+}
+IUserInteraction <|.. UserInteraction
+UserInteraction <|-- ChatInteraction
+UserInteraction <|-- TrackerInteraction
+UserInteraction <|-- HeadlessInteraction
+UserInteractionFactory <|-- WowUserInteractionFactory
+UserInteractionFactory <|-- HeadlessUserInteractionFactory
+WowUserInteractionFactory ..> ChatInteraction : creates
+WowUserInteractionFactory ..> TrackerInteraction : creates
+HeadlessUserInteractionFactory ..> HeadlessInteraction : creates
+AtlasQuestRouter --> UserInteractionFactory
+AtlasQuestRouter o-- IUserInteraction
+
+%% ===================== Platform (Adapter) =====================
+class IGameApi {
+  <<interface>>
+  +playerProfile() Profile
+  +currentLocationName() subzone, zone
+  +questLogTitles() string[]
+  +print(message)
+  +now() number
+}
+class WowGameApi {
+  <<Adapter>>
+  -env: _G
+}
+class StubGameApi {
+  +printed: string[]
+}
+class IScheduler {
+  <<interface>>
+  +run(fn, onDone)
+}
+class ImmediateScheduler
+class FrameScheduler {
+  -jobs: Job[]
+  +tick()
+}
+IGameApi <|.. WowGameApi
+IGameApi <|.. StubGameApi
+IScheduler <|.. ImmediateScheduler
+IScheduler <|.. FrameScheduler
+AtlasQuestRouter --> IGameApi
+AtlasQuestRouter --> IScheduler
+ChatInteraction --> IGameApi
+
+%% ===================== Domain =====================
+class EventBus {
+  <<Observer>>
+  -listeners: Map
+  +subscribe(event, fn) unsubscribe
+  +publish(event, ...)
+}
+class QuestLog {
+  <<Repository>>
+  -quests: Quest[]
+  -catalog: Map
+  +add(idOrName) Quest
+  +remove(id)
+  +clear()
+  +all() Quest[]
+  +markStepDone(step)
+  +serialize() table
+  +restore(saved)
+}
+class Quest {
+  +id: int
+  +name: string
+  +level: int
+  +faction: string
+  +requires: int[]
+  +steps: QuestStep[]
+  +isComplete() bool
+  +nextStep() QuestStep
+}
+class QuestStep {
+  +kind: accept|objective|turnin
+  +location: string
+  +seconds: number
+  +done: bool
+  +describe() string
+}
+class RoutePlan {
+  <<Value Object>>
+  +legs: Leg[]
+  +totalSeconds: number
+  +cursor: int
+  +meta: table
+  +currentLeg() Leg
+  +advance() Leg
+  +isFinished() bool
+  +formatSeconds(s)$ string
+}
+class IRequirementSet {
+  <<interface>>
+  +isAvailable(label) bool
+  +markServed(label)
+  +hasRemaining() bool
+  +availableLabels() int[]
+  +drop(label)
+}
+class RequirementSet {
+  -prereqs: Map
+  -served: Set
+  -dropped: Set
+  +add(label, prereqs)
+  +allEdges(graph)$ RequirementSet
+}
+QuestLog --> EventBus : publishes
+QuestLog *-- Quest
+Quest *-- QuestStep
+IRequirementSet <|.. RequirementSet
+AtlasQuestRouter *-- QuestLog
+AtlasQuestRouter --> EventBus : subscribes
+
+%% ===================== Routing (Builder) =====================
+class QuestRoutePlanner {
+  <<Service>>
+  -builder: WorldGraphBuilder
+  -solverFactory: AtlasSolverFactory
+  +plan(profile, quests, start, options) RoutePlan
+  +toLegs(model, tour) Leg[]
+  +describe(plan) string[]
+}
+class WorldGraphBuilder {
+  <<Builder>>
+  -linkFactory: TravelLinkFactory
+  -accessChain: AccessRule
+  +reset(profile) self
+  +addLocations() self
+  +addWalkingNetwork() self
+  +addFlightNetwork() self
+  +addTransports() self
+  +addTeleports() self
+  +addHearthstone() self
+  +addQuestSteps(quests) self
+  +setStart(location) self
+  +result() WorldModel
+}
+class EdgeGate {
+  -closedTokens: Set
+  +allows(label) bool
+  +token(label) string
+  +onTraverse(label)
+}
+class LocationResolver {
+  +byText(text) id
+  +fromGame(subzone, zone) id
+}
+AtlasQuestRouter --> QuestRoutePlanner
+AtlasQuestRouter --> LocationResolver
+QuestRoutePlanner --> WorldGraphBuilder
+QuestRoutePlanner ..> RoutePlan : creates
+QuestRoutePlanner ..> EdgeGate
+QuestRoutePlanner ..> DistanceMatrix
+WorldGraphBuilder ..> Graph : builds
+WorldGraphBuilder ..> RequirementSet : builds
+
+%% ===================== Travel (Factory Method + Chain of Responsibility) =====================
+class ITravelLink {
+  <<interface>>
+  +seconds(world, profile) number
+  +requirements() table
+}
+class TravelLink {
+  <<abstract>>
+  +from: string
+  +to: string
+  +faction: string
+  +payload() table
+}
+class WalkLink
+class FlightLink
+class ScheduledLink
+class BoatLink
+class ZeppelinLink
+class TramLink
+class TeleportLink
+class HearthstoneLink
+class TravelLinkFactory {
+  <<Factory Method>>
+  -creators: Map~mode, class~
+  +create(mode, from, to, spec) TravelLink
+  +register(mode, class)
+}
+class AccessRule {
+  <<abstract handler>>
+  -nextRule: AccessRule
+  +setNext(rule) AccessRule
+  +handle(link, profile) bool, reason
+  +check(link, profile)*
+}
+class FactionRule
+class ClassRule
+class LevelRule
+class CooldownRule
+ITravelLink <|.. TravelLink
+TravelLink <|-- WalkLink
+TravelLink <|-- FlightLink
+TravelLink <|-- ScheduledLink
+ScheduledLink <|-- BoatLink
+ScheduledLink <|-- ZeppelinLink
+ScheduledLink <|-- TramLink
+TravelLink <|-- TeleportLink
+TravelLink <|-- HearthstoneLink
+TravelLinkFactory ..> TravelLink : creates
+AccessRule <|-- FactionRule
+AccessRule <|-- ClassRule
+AccessRule <|-- LevelRule
+AccessRule <|-- CooldownRule
+AccessRule --> AccessRule : next
+WorldGraphBuilder --> TravelLinkFactory
+WorldGraphBuilder --> AccessRule
+
+%% ===================== Graph =====================
+class Graph {
+  -outEdges: Map
+  -edges: Map~label, Edge~
+  +addNode(id, data)
+  +addEdge(src, dst, weight, payload) label
+  +successors(label) int[]
+  +outDegree(node) int
+  +inDegree(node) int
+  +eachEdge() iterator
+}
+class Edge {
+  +label: int
+  +source: string
+  +destination: string
+  +weight: number
+  +payload: table
+}
+Graph *-- Edge
+
+%% ===================== ATLAS =====================
+class IRouteSolver {
+  <<interface>>
+  +solve(graph, start, requirements, ctx) Result
+}
+class AtlasSolver {
+  +requiredValue: number
+  +costPenalty: number
+  +tieBreakWeight: number
+  +safetyFactor: number
+  -orderings: IDfsOrdering[]
+  -scorer: IScoreComponent
+  -utility: LazyArray
+  -cost: LazyArray
+  -comeFrom: LazyArray
+  +solve(graph, start, requirements, ctx) Result
+  +extend(graph, start, requirements, ordering, ctx) Chain
+}
+class AtlasClassic {
+  -ordering: JavaHashSetOrdering
+  +longestPath(graph, start) int[]
+  +run(graph, start) string
+}
+class AtlasSolverFactory {
+  <<Factory Method>>
+  +create(profile)$ IRouteSolver
+  +register(name, builder)$
+}
+class LocalDag {
+  <<utility>>
+  +build(graph, start, ordering, req, gate)$ order, position
+}
+class LazyArray {
+  -touched: int[]
+  +get(i)
+  +set(i, v)
+  +reset()
+}
+class DistanceMatrix {
+  +distance(a, b) number
+  +maxDistanceTo(node) number
+}
+class IDfsOrdering {
+  <<interface>>
+  +order(labels, graph, req) int[]
+}
+class CheapestFirstOrdering
+class RequiredFirstOrdering
+class InsertionOrdering
+class ExpensiveFirstOrdering
+class JavaHashSetOrdering
+class IScoreComponent {
+  <<interface>>
+  +score(label, ctx) number
+}
+class EdgeScorer {
+  <<Composite>>
+  -components: IScoreComponent[]
+  +paperDefault()$ EdgeScorer
+  +adaptTo(graph) self
+  +score(label, ctx) number
+}
+class RequiredComponent
+class ConnectivityComponent
+class EfficiencyComponent
+class SavingsComponent
+class RegretComponent
+class ProximityComponent
+IRouteSolver <|.. AtlasSolver
+AtlasSolverFactory ..> AtlasSolver : creates
+QuestRoutePlanner --> AtlasSolverFactory
+AtlasSolver ..> LocalDag
+AtlasClassic ..> LocalDag
+AtlasSolver *-- LazyArray
+AtlasSolver o-- IDfsOrdering
+AtlasSolver o-- IScoreComponent
+AtlasSolver ..> IRequirementSet
+AtlasSolver ..> Graph
+IDfsOrdering <|.. CheapestFirstOrdering
+IDfsOrdering <|.. RequiredFirstOrdering
+IDfsOrdering <|.. InsertionOrdering
+IDfsOrdering <|.. ExpensiveFirstOrdering
+IDfsOrdering <|.. JavaHashSetOrdering
+IScoreComponent <|.. EdgeScorer
+IScoreComponent <|.. RequiredComponent
+IScoreComponent <|.. ConnectivityComponent
+IScoreComponent <|.. EfficiencyComponent
+IScoreComponent <|.. SavingsComponent
+IScoreComponent <|.. RegretComponent
+IScoreComponent <|.. ProximityComponent
+EdgeScorer o-- IScoreComponent : children
+SavingsComponent ..> DistanceMatrix
+ProximityComponent ..> DistanceMatrix
