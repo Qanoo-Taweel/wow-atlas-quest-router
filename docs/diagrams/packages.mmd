@@ -5,7 +5,7 @@ flowchart TB
   subgraph UI["UI layer"]
     Commands["UI/Commands.lua<br/>Command + Chain of Responsibility"]
     Factory["UI/UserInteractionFactory.lua<br/>Factory Method"]
-    Tracker["UI/TrackerFrame.lua"]
+    Guide["UI/GuideFrame.lua<br/>step-by-step guide window"]
   end
   Facade["AtlasQuestRouter.lua<br/>Facade"]
   subgraph APP["Application"]
@@ -33,7 +33,7 @@ flowchart TB
     Class["Core/Class.lua"]
     Bus["Core/EventBus.lua"]
   end
-  Platform["Platform/GameApi.lua<br/>Adapter (only file that reads WoW globals)"]
+  Platform["Platform/GameApi.lua + GameEventBridge.lua<br/>Adapter (the only files that talk to WoW)"]
   UI --> Facade
   Facade --> APP
   Facade --> DOMAIN

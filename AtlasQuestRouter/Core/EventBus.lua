@@ -2,7 +2,7 @@
   Core/EventBus.lua
   PATTERN: Observer (publish / subscribe).
 
-  Why: the QuestLog should not know that a tracker frame, a chat printer or a
+  Why: the QuestLog should not know that a guide window, a chat printer or a
   test exists. It just publishes "QUEST_ADDED"; whoever cares subscribes.
   SOLID: Open/Closed. New listeners are added without editing the publisher.
 ----------------------------------------------------------------------------]]

@@ -1,7 +1,7 @@
 ## Interface: 11507
 ## Title: Atlas Quest Router
-## Notes: Quest tracker that plans the shortest quest route with the ATLAS algorithm (walk, flight paths, boats, zeppelins, tram, portals, hearthstone).
-## Author: Koki (Qanoo-Taweel)
+## Notes: Step-by-step quest guide that plans the shortest quest route with the ATLAS algorithm (walk, flight paths, boats, zeppelins, tram, portals, hearthstone).
+## Author: Qanoo-Taweel, zynparcn
 ## Version: 1.0.0
 ## SavedVariables: AtlasQuestRouterDB
 ## X-Category: Quest
@@ -44,8 +44,9 @@ Routing\QuestRoutePlanner.lua
 # Platform + UI --------------------------------------------------------
 Platform\GameApi.lua
 Platform\Scheduler.lua
+Platform\GameEventBridge.lua
 UI\UserInteraction.lua
-UI\TrackerFrame.lua
+UI\GuideFrame.lua
 UI\UserInteractionFactory.lua
 UI\Commands.lua
 

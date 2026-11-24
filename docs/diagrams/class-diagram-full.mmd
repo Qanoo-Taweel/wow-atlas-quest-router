@@ -26,7 +26,12 @@ class AtlasQuestRouter {
   +setStartOverride(text)
   +setRiding(text)
   +setBind(text)
-  +setTrackerVisible(bool)
+  +previousLeg() Leg
+  +onQuestAccepted(title)
+  +onQuestTurnedIn(title)
+  +onObjectivesComplete(title)
+  +onArrived(place)
+  +setGuideVisible(bool)
   +runCommand(input)
   +save() table
   +load(saved)
@@ -48,6 +53,7 @@ class HelpCommand
 class AddCommand
 class PlanCommand
 class NextCommand
+class BackCommand
 class ImportCommand
 class UnknownCommand
 class CommandChain {
@@ -59,6 +65,7 @@ CommandHandler <|-- HelpCommand
 CommandHandler <|-- AddCommand
 CommandHandler <|-- PlanCommand
 CommandHandler <|-- NextCommand
+CommandHandler <|-- BackCommand
 CommandHandler <|-- ImportCommand
 CommandHandler <|-- UnknownCommand
 CommandHandler --> CommandHandler : next
@@ -80,10 +87,16 @@ class UserInteraction {
 class ChatInteraction {
   -api: IGameApi
 }
-class TrackerInteraction {
+class GuideInteraction {
   -frame: Frame
+  -plan: RoutePlan
+  -getFacing: function
   +build() Frame
-  +render(plan, lines)
+  +render(plan)
+  +instruction(leg) text, detail
+  +bearing(from, to) radians
+  +compassName(radians) string
+  +updateArrow()
 }
 class HeadlessInteraction {
   +messages: string[]
@@ -102,12 +115,12 @@ class HeadlessUserInteractionFactory {
 }
 IUserInteraction <|.. UserInteraction
 UserInteraction <|-- ChatInteraction
-UserInteraction <|-- TrackerInteraction
+UserInteraction <|-- GuideInteraction
 UserInteraction <|-- HeadlessInteraction
 UserInteractionFactory <|-- WowUserInteractionFactory
 UserInteractionFactory <|-- HeadlessUserInteractionFactory
 WowUserInteractionFactory ..> ChatInteraction : creates
-WowUserInteractionFactory ..> TrackerInteraction : creates
+WowUserInteractionFactory ..> GuideInteraction : creates
 HeadlessUserInteractionFactory ..> HeadlessInteraction : creates
 AtlasQuestRouter --> UserInteractionFactory
 AtlasQuestRouter o-- IUserInteraction
@@ -118,6 +131,10 @@ class IGameApi {
   +playerProfile() Profile
   +currentLocationName() subzone, zone
   +questLogTitles() string[]
+  +questLogEntries() Entry[]
+  +questTitleAt(index) string
+  +questDialogTitle() string
+  +playerFacing() radians
   +print(message)
   +now() number
 }
@@ -137,6 +154,15 @@ class FrameScheduler {
   -jobs: Job[]
   +tick()
 }
+class GameEventBridge {
+  <<Adapter + Observer>>
+  -pendingTurnIn: string
+  +handle(event, arg1)
+  +attach(frame)
+}
+GameEventBridge --> AtlasQuestRouter : onQuestAccepted / onArrived ...
+GameEventBridge --> IGameApi
+GameEventBridge --> LocationResolver
 IGameApi <|.. WowGameApi
 IGameApi <|.. StubGameApi
 IScheduler <|.. ImmediateScheduler
@@ -189,6 +215,7 @@ class RoutePlan {
   +meta: table
   +currentLeg() Leg
   +advance() Leg
+  +back() Leg
   +isFinished() bool
   +formatSeconds(s)$ string
 }
@@ -247,6 +274,7 @@ class EdgeGate {
 class LocationResolver {
   +byText(text) id
   +fromGame(subzone, zone) id
+  +exactSubzone(subzone) id
 }
 AtlasQuestRouter --> QuestRoutePlanner
 AtlasQuestRouter --> LocationResolver

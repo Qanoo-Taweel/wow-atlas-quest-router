@@ -11,7 +11,8 @@ local _, ns = ...
 local Class = ns.Class
 
 local IGameApi = Class.interface("IGameApi", {
-    "playerProfile", "currentLocationName", "questLogTitles", "print", "now",
+    "playerProfile", "currentLocationName", "questLogTitles", "questLogEntries",
+    "questTitleAt", "questDialogTitle", "playerFacing", "print", "now",
 })
 
 ---------------------------------------------------------------------------
@@ -60,6 +61,32 @@ function WowGameApi:questLogTitles()
     return titles
 end
 
+--- { {title=, complete=bool}, ... } for every quest (headers skipped)
+function WowGameApi:questLogEntries()
+    local G, out = self.env, {}
+    if not G.GetNumQuestLogEntries then return out end
+    for i = 1, G.GetNumQuestLogEntries() do
+        local title, _, _, isHeader, _, isComplete = G.GetQuestLogTitle(i)
+        if title and not isHeader then out[#out + 1] = { title = title, complete = isComplete == 1 } end
+    end
+    return out
+end
+
+function WowGameApi:questTitleAt(index)
+    if not self.env.GetQuestLogTitle or not index then return nil end
+    return (self.env.GetQuestLogTitle(index))
+end
+
+--- Title of the quest shown in the open quest dialog (turn-in window).
+function WowGameApi:questDialogTitle()
+    return self.env.GetTitleText and self.env.GetTitleText() or nil
+end
+
+--- Radians, counter-clockwise from north (nil where the client hides it).
+function WowGameApi:playerFacing()
+    return self.env.GetPlayerFacing and self.env.GetPlayerFacing() or nil
+end
+
 function WowGameApi:print(message)
     local frame = self.env.DEFAULT_CHAT_FRAME
     if frame then frame:AddMessage("|cff4fc3f7AtlasQuestRouter|r " .. message)
@@ -85,6 +112,10 @@ function StubGameApi:playerProfile()
 end
 function StubGameApi:currentLocationName() return self.state.subzone or "", self.state.zone or "" end
 function StubGameApi:questLogTitles() return self.state.questLog or {} end
+function StubGameApi:questLogEntries() return self.state.entries or {} end
+function StubGameApi:questTitleAt(i) return (self.state.questLog or {})[i] end
+function StubGameApi:questDialogTitle() return self.state.dialogTitle end
+function StubGameApi:playerFacing() return self.state.facing end
 function StubGameApi:print(message) self.printed[#self.printed + 1] = message end
 function StubGameApi:now() return self.state.time or 0 end
 

@@ -6,7 +6,7 @@
   whose verbs contain <verb> executes it; otherwise it forwards to the next.
   The last link (UnknownCommand) always answers, so nothing is ever lost.
 
-      Help -> Add -> Remove -> List -> Clear -> Plan -> Next -> Show -> Hide
+      Help -> Add -> Remove -> List -> Clear -> Plan -> Next -> Back -> Show -> Hide
            -> From -> Speed -> Hearth -> Import -> Demo -> Unknown
 
   Each handler only talks to the Facade (AtlasQuestRouter), never to the
@@ -59,9 +59,10 @@ C.Clear = command("ClearCommand", { "clear" }, "clear - stop tracking everything
 C.Plan = command("PlanCommand", { "plan", "route" }, "plan - compute the ATLAS route from where you stand", function(_, _, r)
     r:plan()
 end)
-C.Next = command("NextCommand", { "next", "n" }, "next - mark the current leg done", function(_, _, r) r:nextLeg() end)
-C.Show = command("ShowCommand", { "show" }, "show - open the route tracker", function(_, _, r) r:setTrackerVisible(true) end)
-C.Hide = command("HideCommand", { "hide" }, "hide - close the route tracker", function(_, _, r) r:setTrackerVisible(false) end)
+C.Next = command("NextCommand", { "next", "n", "skip" }, "next - mark the current step done", function(_, _, r) r:nextLeg() end)
+C.Back = command("BackCommand", { "back", "prev" }, "back - go back one step", function(_, _, r) r:previousLeg() end)
+C.Show = command("ShowCommand", { "show" }, "show - open the guide window", function(_, _, r) r:setGuideVisible(true) end)
+C.Hide = command("HideCommand", { "hide" }, "hide - close the guide window", function(_, _, r) r:setGuideVisible(false) end)
 C.From = command("FromCommand", { "from" }, "from <place> - plan from a place instead of here", function(_, args, r)
     r:setStartOverride(args)
 end)
@@ -84,7 +85,7 @@ function C.Unknown:execute(args, r) r:say("Unknown command. Type /aqr help") end
 --- Builds the chain in the order shown in the header comment.
 local CommandChain = {}
 function CommandChain.default()
-    local order = { "Help", "Add", "Remove", "List", "Clear", "Plan", "Next", "Show", "Hide",
+    local order = { "Help", "Add", "Remove", "List", "Clear", "Plan", "Next", "Back", "Show", "Hide",
                     "From", "Speed", "Hearth", "Import", "Demo", "Unknown" }
     local head, tail
     for _, key in ipairs(order) do

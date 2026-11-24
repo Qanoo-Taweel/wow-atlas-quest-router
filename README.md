@@ -1,25 +1,26 @@
 # Atlas Quest Router
 
-**A World of Warcraft Forever quest tracker addon (Lua) that plans the shortest quest route with the ATLAS algorithm.**
+Atlas Quest Router is a **step-by-step quest guide addon for World of Warcraft Forever**, written in Lua.
+It reads the quests in your quest log and shows them one step at a time in a guide window: what to do now
+(accept, kill, collect, turn in, or travel), an arrow pointing to where it happens, and what comes next.
+The guide moves on by itself when you accept a quest, finish its objectives, turn it in or arrive at a place.
 
-[Website and live planner](https://qanoo-taweel.github.io/wow-atlas-quest-router/) ·
-[Class diagrams](docs/diagrams) ·
-[Design patterns explained](docs/PATTERNS.md) ·
-[Exam cheat sheet](docs/VIVA.md)
+The order of the steps and the way you travel between them (walking, flight masters, boats, zeppelins,
+the Deeprun Tram, class teleports, the hearthstone) are planned with the **ATLAS algorithm**
+(Kabaca, Samir and Takan; original implementation: [savastakan/atlas](https://github.com/savastakan/atlas)).
+ATLAS is the only routing algorithm in the project.
 
-You tell the addon which quests you have. It works out in which order to accept them, do the objectives and
-turn them in, and how to travel between those places (walking, flight masters, boats, zeppelins, the Deeprun Tram,
-mage and druid teleports, the hearthstone). The order is computed by **ATLAS**, the longest-path arc-routing heuristic of
-Kabaca, Samir and Takan ([paper, SSRN 6099031](https://ssrn.com/abstract=6099031), reference code
-[savastakan/atlas](https://github.com/savastakan/atlas)). No other routing algorithm is used, in the addon or on the website.
+**Authors:** [Qanoo-Taweel](https://github.com/Qanoo-Taweel) · [zynparcn](https://github.com/zynparcn)
+
+**Website:** <https://qanoo-taweel.github.io/wow-atlas-quest-router/> (live route planner, ATLAS explained step by step, diagrams)
 
 | | |
 |---|---|
-| Language | Lua 5.1 (the version inside the WoW client) |
-| Addon size | 32 Lua files, one class per responsibility |
-| Design | SOLID, 11 named design patterns (Facade, Factory Method, Chain of Responsibility, Command, Builder, Strategy, Composite, Observer, Adapter, Repository, Value Object) |
-| Tests | 50 Lua tests + 5 JavaScript parity scenarios, run on every push (GitHub Actions) |
-| Verified | The Lua port of ATLAS prints **exactly** the same output as the original `Atlas.java` on 7 state machines (6 to 1,000 edges) |
+| Language | Lua 5.1 (the Lua version inside the WoW client) |
+| Addon | 33 Lua files, one class per responsibility |
+| Design | SOLID principles and 11 named design patterns: Facade, Factory Method, Chain of Responsibility, Command, Builder, Strategy, Composite, Observer, Adapter, Repository, Value Object |
+| Tests | 56 Lua tests and 5 website parity checks, run automatically on every push |
+| Verified | The Lua version of ATLAS produces exactly the same output as the original `Atlas.java` on 7 test graphs (6 to 1,000 edges) |
 
 ---
 
@@ -34,7 +35,7 @@ Kabaca, Samir and Takan ([paper, SSRN 6099031](https://ssrn.com/abstract=6099031
 7. [Tests and verification](#7-tests-and-verification)
 8. [The website](#8-the-website)
 9. [Limitations](#9-limitations)
-10. [Credits](#10-credits)
+10. [Authors and credits](#10-authors-and-credits)
 
 ---
 
@@ -45,7 +46,7 @@ Kabaca, Samir and Takan ([paper, SSRN 6099031](https://ssrn.com/abstract=6099031
 3. In game, type `/dump select(4, GetBuildInfo())`. If the number is not `11507`, write it on the
    `## Interface:` line of `AtlasQuestRouter/AtlasQuestRouter.toc`.
 4. Enable **Atlas Quest Router** in the *AddOns* menu on the character select screen.
-5. Type `/aqr import` (reads your quest log) or `/aqr demo`, then `/aqr plan`.
+5. Type `/aqr import` (reads your quest log) or `/aqr demo`, then `/aqr plan`. The guide window opens with the first step.
 
 | Command | What it does |
 |---|---|
@@ -54,8 +55,8 @@ Kabaca, Samir and Takan ([paper, SSRN 6099031](https://ssrn.com/abstract=6099031
 | `/aqr add <id or name>` / `/aqr remove <id>` | track / untrack one quest |
 | `/aqr list` / `/aqr clear` | show / forget tracked quests |
 | `/aqr plan` | compute the ATLAS route from where you stand |
-| `/aqr next` | current leg done; quest steps are ticked off |
-| `/aqr show` / `/aqr hide` | the tracker window (also has *Next* and *Re-plan* buttons) |
+| `/aqr next` / `/aqr back` | move the guide one step forward / back (normally it moves by itself) |
+| `/aqr show` / `/aqr hide` | the guide window (also has *Back*, *Skip* and *Re-plan* buttons) |
 | `/aqr from <place>` | plan from another place (`/aqr from here` to reset) |
 | `/aqr speed foot\|60\|100` | your ground speed |
 | `/aqr hearth <place>` | where your hearthstone is bound (read from the game when possible) |
@@ -92,15 +93,17 @@ AtlasQuestRouter/                  <- the addon (copy this folder into Interface
              EdgeGate.lua          one-use edges (hearthstone)
              LocationResolver.lua  game zone names -> map places
   Platform/  GameApi.lua           ADAPTER over the WoW API (+ a stub for tests)
+             GameEventBridge.lua   ADAPTER: WoW quest/zone events -> guide moves on by itself
              Scheduler.lua         run ATLAS one iteration per frame (coroutine)
-  UI/        UserInteraction.lua   chat / tracker / headless outputs
+  UI/        UserInteraction.lua   chat / guide / headless outputs
              UserInteractionFactory.lua FACTORY METHOD (GoF form, abstract creator)
-             TrackerFrame.lua      the in-game tracker window
+             GuideFrame.lua        the step-by-step guide window with direction arrow
              Commands.lua          COMMAND + CHAIN OF RESPONSIBILITY for /aqr
 docs/                              the website (GitHub Pages) + diagrams + notes
   index.html, assets/              site; assets/atlas.js = JavaScript port of the planner
   diagrams/                        Mermaid sources (.mmd) + SVG + PNG for printing
-  PATTERNS.md, VIVA.md, DRAW_BY_HAND.md
+  PATTERNS.md                      design patterns, where and why
+  SIMPLIFIED_CLASS_DIAGRAM.md      the 12 central classes on one page
 tests/                             Lua tests, Java fixtures, JS parity test
 tools/                             fixture + website data generators
 ```
@@ -130,12 +133,17 @@ needs the previous quest's turn-in.
 (see [section 4](#4-atlas-in-detail)): local DAG → longest-path DP → best chain → append → mark served steps,
 until every step is done (or reported unreachable, for example Teldrassil for a Horde character).
 
-**Step 4. The tour becomes a plan.** `QuestRoutePlanner` turns the edge sequence into legs
-("Flight: Stormwind → Sentinel Hill (1m 16s)", "Accept 'Westfall Stew'"), merging consecutive walking and flying edges.
-The plan is shown in chat and in the tracker window. `/aqr next` (or the *Next* button) advances it and ticks off the
-quest step in the quest log.
+**Step 4. The tour becomes a guide.** `QuestRoutePlanner` turns the edge sequence into steps
+("Fly to Sentinel Hill", "Accept 'Westfall Stew'"), merging consecutive walking and flying edges.
+The guide window (`UI/GuideFrame.lua`) shows the current step in large text with an icon, an arrow that points
+toward the destination (it turns as the player turns), a progress bar and the next steps.
 
-**Step 5. The game never freezes.** In the client, ATLAS runs inside a coroutine and the `FrameScheduler` resumes it
+**Step 5. The guide follows the game.** `Platform/GameEventBridge.lua` listens to the client:
+accepting the quest (`QUEST_ACCEPTED`), completing its objectives (`QUEST_LOG_UPDATE`), turning it in
+(`QUEST_TURNED_IN`) or entering the destination (`ZONE_CHANGED`) moves the guide to the next step and ticks it off.
+*Skip* and *Back* are there for manual control.
+
+**Step 6. The game never freezes.** In the client, ATLAS runs inside a coroutine and the `FrameScheduler` resumes it
 once per rendered frame, so a long plan is spread over a few frames.
 
 ## 4. ATLAS in detail
@@ -189,7 +197,7 @@ The full discussion with "why" for each pattern is in [docs/PATTERNS.md](docs/PA
 | Pattern | Where | Why it is used |
 |---|---|---|
 | **Facade** | `AtlasQuestRouter.lua` | One simple API (`addQuest`, `plan`, `nextLeg`...) in front of ~15 classes; commands, buttons, events and tests only talk to it. |
-| **Factory Method** | `UI/UserInteractionFactory.lua` | Abstract creator with `createInteraction(kind)`; the WoW factory makes a chat printer + tracker window, the headless factory makes recorders for tests. The facade does not change. |
+| **Factory Method** | `UI/UserInteractionFactory.lua` | Abstract creator with `createInteraction(kind)`; the WoW factory makes a chat printer + the guide window, the headless factory makes recorders for tests. The facade does not change. |
 | **Factory Method** | `Travel/TravelLinkFactory.lua`, `Atlas/AtlasSolverFactory.lua` | Callers ask for "boat" or the "quest" profile and receive a ready object; new kinds register without editing callers. |
 | **Chain of Responsibility** | `Travel/AccessRules.lua` | Faction → Class → Level → Cooldown rules; each rejects or passes on. A new restriction is one class. |
 | **Command + Chain of Responsibility** | `UI/Commands.lua` | Each `/aqr` verb is a command object; the request travels the chain until one handles it. |
@@ -197,13 +205,13 @@ The full discussion with "why" for each pattern is in [docs/PATTERNS.md](docs/PA
 | **Strategy** | `Atlas/DfsOrderings.lua`, `Atlas/ScoreComponents.lua` | Interchangeable DFS orders and scoring terms. |
 | **Composite** | `Atlas/EdgeScorer.lua` | A scorer made of scorers; ATLAS asks one object. |
 | **Observer** | `Core/EventBus.lua`, `Domain/QuestLog.lua` | The quest log publishes events; the facade drops stale plans. |
-| **Adapter** | `Platform/GameApi.lua` | The only file that reads WoW globals; everything else is testable outside the game. |
+| **Adapter** | `Platform/GameApi.lua`, `Platform/GameEventBridge.lua` | The only files that talk to the WoW client (functions and events); everything else is testable outside the game. |
 | **Repository** | `Domain/QuestLog.lua` | Stores tracked quests and (de)serialises them for SavedVariables. |
 | **Value Object** | `Domain/RoutePlan.lua`, `Edge` | Plain result data, easy to render anywhere. |
 
 | SOLID | How it shows |
 |---|---|
-| **S**ingle responsibility | Graph stores topology, AtlasSolver routes, WorldGraphBuilder builds, LocationResolver matches names, TrackerInteraction draws. |
+| **S**ingle responsibility | Graph stores topology, AtlasSolver routes, WorldGraphBuilder builds, LocationResolver matches names, GuideInteraction draws. |
 | **O**pen/closed | New travel mode, access rule, score term or command = a new class; nothing existing is edited. |
 | **L**iskov substitution | Any `TravelLink`, `AccessRule`, `UserInteraction`, `IDfsOrdering` replaces another; tests swap `WowGameApi` for `StubGameApi`. |
 | **I**nterface segregation | `IScoreComponent` (1 method), `IScheduler` (1), `IRequirementSet` (5). ATLAS never sees the quest model. |
@@ -216,19 +224,19 @@ All diagrams are Mermaid sources in [`docs/diagrams/`](docs/diagrams), rendered 
 | Diagram | Files |
 |---|---|
 | Full class diagram (every class, attribute, method, relation) | [`class-diagram-full.svg`](docs/diagrams/class-diagram-full.svg) · [png](docs/diagrams/class-diagram-full.png) |
-| Simplified class diagram (12 classes, methods kept, hand-drawable) | [`class-diagram-simplified.svg`](docs/diagrams/class-diagram-simplified.svg) · [png](docs/diagrams/class-diagram-simplified.png) |
+| Simplified class diagram (12 central classes with their methods) | [`class-diagram-simplified.svg`](docs/diagrams/class-diagram-simplified.svg) · [png](docs/diagrams/class-diagram-simplified.png) |
 | Sequence diagram of `/aqr plan` | [`sequence-plan.svg`](docs/diagrams/sequence-plan.svg) |
 | Layers / packages | [`packages.svg`](docs/diagrams/packages.svg) |
 | ATLAS flowchart | [`atlas-flow.svg`](docs/diagrams/atlas-flow.svg) |
 
 ![Simplified class diagram](docs/diagrams/class-diagram-simplified.svg)
 
-How to draw the simplified one from memory: [docs/DRAW_BY_HAND.md](docs/DRAW_BY_HAND.md).
+A one-page text version of the simplified diagram: [docs/SIMPLIFIED_CLASS_DIAGRAM.md](docs/SIMPLIFIED_CLASS_DIAGRAM.md).
 
 ## 7. Tests and verification
 
 ```bash
-lua5.1 tests/run.lua            # 50 tests: core, ATLAS, patterns, planner, facade
+lua5.1 tests/run.lua            # 56 tests: core, ATLAS, patterns, planner, guide, facade
 node tests/parity.mjs           # website JS planner == Lua addon, 5 scenarios
 tools/java_reference.sh         # (optional) re-create Java fixtures with the original Atlas.java
 lua5.1 tools/export_web_data.lua # re-export website data after changing Data/*.lua
@@ -240,6 +248,8 @@ lua5.1 tools/export_web_data.lua # re-export website data after changing Data/*.
 * **Planner properties.** Every step is covered, the order respects accept → objectives → turn in and quest chains,
   legs form a continuous journey, the hearthstone is used at most once, unreachable steps are reported, a 24-step plan
   takes well under 2 s in plain Lua 5.1.
+* **Guide behaviour.** Accepting, finishing, turning in and arriving move the guide on; unrelated events do not;
+  the guide window renders with a simulated frame API.
 * **Patterns tested by behaviour.** Chains stop at the right rule, factories return the right subclass, the
   abstract creator refuses to create, the adapter reads a fake WoW environment.
 * **Website = addon.** `tests/parity.mjs` checks that the JavaScript planner gives the same tour, legs, total time
@@ -248,30 +258,41 @@ lua5.1 tools/export_web_data.lua # re-export website data after changing Data/*.
 
 ## 8. The website
 
-[`docs/index.html`](docs/index.html), served by GitHub Pages from the `docs/` folder:
+**Open it here:** <https://qanoo-taweel.github.io/wow-atlas-quest-router/>
 
-* **Live planner** - faction, class, riding, start, hearthstone and quests; the ATLAS route is drawn on a map of both
-  continents (one colour per travel mode), with a numbered step list, timings and an animated traveller.
-* **Step-by-step ATLAS** - a small Elwynn/Westfall example; each iteration shows the local DAG order, the
-  DP table (utility, cost, score, comeFrom) and the chosen chain.
-* **Architecture** - the patterns and SOLID tables, plus all diagrams with download links.
+The website is in the `docs/` folder and is published by GitHub Pages. It has:
 
-To preview locally: `python3 -m http.server --directory docs` and open <http://localhost:8000>.
+* **Live planner.** Choose faction, class, riding speed, starting place, hearthstone and quests; ATLAS computes the
+  route in the browser and draws it on a map of both continents (one colour per travel mode), with the numbered steps,
+  timings and an animated traveller.
+* **The guide window.** A live preview of the in-game guide.
+* **ATLAS step by step.** A small example map; each iteration shows the order of the local DAG, the dynamic
+  programming table (utility, cost, score, predecessor) and the chosen chain.
+* **Architecture and diagrams.** The design patterns, the SOLID table and all diagrams with PNG downloads.
+
+The website runs the same planner as the addon (a JavaScript copy of the Lua code, checked by `tests/parity.mjs`
+to give exactly the same routes).
+
+To open it without internet access, download the repository and open `docs/index.html` in a browser.
 
 ## 9. Limitations
 
-* The addon has been tested against a simulated WoW API (`tests/spec_facade.lua`, `tests/spec_patterns.lua`),
-  not yet inside a live Forever client. The `.toc` interface number may need updating (see install step 3).
+* The `.toc` interface number may need updating for your client build (see install step 3).
+* The direction arrow uses our overview map, so it shows the general direction, not an exact waypoint.
 * Map positions and travel times are approximations made for routing, on our own overview map.
 * The quest catalogue is a sample of 31 quests; `/aqr import` only recognises quests that are in `Data/QuestData.lua`.
 * ATLAS is a heuristic. It is fast and good, not guaranteed optimal; the paper reports a 20–30% gap to the best known
   solutions on small benchmarks, traded for millisecond response time.
 
-## 10. Credits
+## 10. Authors and credits
+
+* [Qanoo-Taweel](https://github.com/Qanoo-Taweel)
+* [zynparcn](https://github.com/zynparcn)
+
 
 * ATLAS: H. Kabaca, A. Samir, S. Takan, *Benchmarking Atlas: A High-Performance Heuristic for Large-Scale Arc Routing
   Problems* (preprint, SSRN 6099031); original Java implementation [savastakan/atlas](https://github.com/savastakan/atlas).
 * `tests/fixtures/bbtas.fsm` is the `bbtas` benchmark machine shipped with savastakan/atlas.
-* Fan-made and unofficial; not affiliated with or endorsed by Blizzard Entertainment.
+* World of Warcraft is a trademark of Blizzard Entertainment.
 
 License: MIT (see [LICENSE](LICENSE)).

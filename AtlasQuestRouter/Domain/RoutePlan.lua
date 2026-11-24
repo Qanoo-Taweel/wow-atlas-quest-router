@@ -30,6 +30,11 @@ function RoutePlan:advance()
     return self:currentLeg()
 end
 
+function RoutePlan:back()
+    if self.cursor > 1 then self.cursor = self.cursor - 1 end
+    return self:currentLeg()
+end
+
 function RoutePlan:isFinished() return self.cursor > #self.legs end
 
 --- "1h 04m", "12m 30s", "45s"

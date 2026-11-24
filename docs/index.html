@@ -29,7 +29,7 @@
   <div class="hero-text">
     <p class="eyebrow">World of Warcraft Forever addon · Lua 5.1</p>
     <h1>Every quest. One road.<br><span>Planned by ATLAS.</span></h1>
-    <p class="lead">Atlas Quest Router tracks your quests and computes the fastest order to accept, complete and turn them in, across walking paths, flight masters, boats, zeppelins, the tram, class teleports and your hearthstone. The route is built by <strong>ATLAS</strong>, the longest-path arc-routing heuristic of Kabaca, Samir &amp; Takan, and by nothing else.</p>
+    <p class="lead">Atlas Quest Router is a step-by-step quest guide. It tracks your quests and computes the fastest order to accept, complete and turn them in, across walking paths, flight masters, boats, zeppelins, the tram, class teleports and your hearthstone. The route is built by <strong>ATLAS</strong>, the longest-path arc-routing heuristic of Kabaca, Samir &amp; Takan, and by nothing else.</p>
     <div class="hero-cta">
       <a class="btn primary" href="#planner">Plan a quest route</a>
       <a class="btn" href="#steps">Watch ATLAS think</a>
@@ -38,11 +38,14 @@
   </div>
   <div class="hero-card">
     <div class="tracker-mock">
-      <div class="tm-head"><span>ATLAS Route</span><span id="mockTotal">—</span></div>
-      <ol id="mockLines"></ol>
-      <div class="tm-foot"><span class="tm-btn">Next</span><span class="tm-btn">Re-plan</span><span class="tm-prog" id="mockProg"></span></div>
+      <div class="tm-head"><span>ATLAS Guide</span><span id="mockTotal">—</span></div>
+      <div class="tm-now"><span class="tm-icon" id="mockIcon">!</span><div><b id="mockStep"></b><small id="mockDetail"></small></div></div>
+      <div class="tm-dir"><span class="tm-arrow" id="mockArrow">➤</span><span id="mockDir"></span></div>
+      <div class="tm-bar"><i id="mockBar"></i></div>
+      <div class="tm-next"><span>Next:</span><ol id="mockLines"></ol></div>
+      <div class="tm-foot"><span class="tm-btn">Back</span><span class="tm-btn">Skip</span><span class="tm-btn">Re-plan</span><span class="tm-prog" id="mockProg"></span></div>
     </div>
-    <p class="caption">The in-game tracker window, filled with a live ATLAS plan computed in your browser.</p>
+    <p class="caption">The in-game guide window: one step at a time, an arrow to where it happens, and it moves on by itself when you accept a quest, finish it, turn it in or arrive. This one is filled with a live ATLAS plan.</p>
   </div>
 </section>
 
@@ -188,7 +191,7 @@
   <div class="section-head">
     <p class="eyebrow">UML</p>
     <h2>Class and sequence diagrams</h2>
-    <p>Generated from Mermaid sources in <code>docs/diagrams/</code>. The simplified one keeps every important method and fits on one sheet, so it can be drawn by hand.</p>
+    <p>Generated from Mermaid sources in <code>docs/diagrams/</code>. The simplified diagram keeps every important method and fits on one page.</p>
   </div>
   <div class="tabs" id="diagramTabs"></div>
   <div class="panel diagram-view">
@@ -219,8 +222,8 @@
 /aqr remove &lt;id&gt;       stop tracking
 /aqr list | clear
 /aqr plan              ATLAS route from where you stand
-/aqr next              current leg done, show the next
-/aqr show | hide       tracker window
+/aqr next | back       move the guide forward / back
+/aqr show | hide       guide window
 /aqr from &lt;place&gt;      plan from somewhere else
 /aqr speed foot|60|100 ground speed
 /aqr hearth &lt;place&gt;    where your hearthstone is set
@@ -231,9 +234,9 @@
 </main>
 
 <footer class="footer">
-  <p><strong>Atlas Quest Router</strong> · university assignment by Koki · <a href="https://github.com/Qanoo-Taweel/wow-atlas-quest-router">source on GitHub</a></p>
+  <p><strong>Atlas Quest Router</strong> · by <a href="https://github.com/Qanoo-Taweel">Qanoo-Taweel</a> and <a href="https://github.com/zynparcn">zynparcn</a> · <a href="https://github.com/Qanoo-Taweel/wow-atlas-quest-router">source on GitHub</a></p>
   <p>ATLAS: H. Kabaca, A. Samir, S. Takan, “Benchmarking Atlas: A High-Performance Heuristic for Large-Scale Arc Routing Problems” (SSRN 6099031) · reference code <a href="https://github.com/savastakan/atlas">savastakan/atlas</a>.</p>
-  <p class="muted">Fan-made and unofficial; not affiliated with Blizzard Entertainment. Map positions and travel times are approximations made for routing.</p>
+  <p class="muted">World of Warcraft is a trademark of Blizzard Entertainment. Map positions and travel times are approximations made for routing.</p>
 </footer>
 
 <script src="assets/data.js"></script>

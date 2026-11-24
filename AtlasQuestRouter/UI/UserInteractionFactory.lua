@@ -8,10 +8,10 @@
             ^                     ^
       WowUserInteractionFactory   HeadlessUserInteractionFactory
         chat    -> ChatInteraction        chat    -> HeadlessInteraction
-        tracker -> TrackerInteraction     tracker -> HeadlessInteraction
+        guide   -> GuideInteraction       guide   -> HeadlessInteraction
 
   Why: the facade needs "something that shows a plan". In the game that is a
-  chat printer plus a window; in tests and in the website export it is an
+  chat printer plus a step-by-step guide window; in tests and in the website export it is an
   in-memory recorder. The facade code is identical in both worlds; only the
   factory object passed to it changes.
 
@@ -23,7 +23,7 @@ local Class = ns.Class
 
 local UserInteractionFactory = Class.define("UserInteractionFactory")
 
-UserInteractionFactory.KINDS = { "chat", "tracker" }
+UserInteractionFactory.KINDS = { "chat", "guide" }
 
 --- Template method: build every interaction the addon uses.
 function UserInteractionFactory:createInteractions(callbacks)
@@ -42,15 +42,18 @@ UserInteractionFactory.createInteraction = Class.abstract("UserInteractionFactor
 ---------------------------------------------------------------------------
 local WowUserInteractionFactory = Class.define("WowUserInteractionFactory", UserInteractionFactory)
 
-function WowUserInteractionFactory:init(gameApi, createFrame, uiParent)
-    self.gameApi, self.createFrame, self.uiParent = gameApi, createFrame, uiParent
+function WowUserInteractionFactory:init(gameApi, createFrame, uiParent, world)
+    self.gameApi, self.createFrame, self.uiParent, self.world = gameApi, createFrame, uiParent, world
 end
 
 function WowUserInteractionFactory:createInteraction(kind, callbacks)
     if kind == "chat" then
         return ns.ChatInteraction.new(self.gameApi)
-    elseif kind == "tracker" then
-        return ns.TrackerInteraction.new(self.createFrame, self.uiParent, callbacks)
+    elseif kind == "guide" then
+        return ns.GuideInteraction.new({
+            createFrame = self.createFrame, parent = self.uiParent, world = self.world,
+            callbacks = callbacks, getFacing = function() return self.gameApi:playerFacing() end,
+        })
     end
     error("WowUserInteractionFactory: unknown interaction " .. tostring(kind))
 end

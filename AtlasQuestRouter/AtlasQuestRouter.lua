@@ -2,7 +2,7 @@
   AtlasQuestRouter.lua
   PATTERN: Facade.
 
-  The ONE object the rest of the world talks to. Slash commands, the tracker
+  The ONE object the rest of the world talks to. Slash commands, the guide
   buttons, game events and the tests call simple methods such as
   addQuest(), plan(), nextLeg(). Behind it sit ~15 classes (QuestLog,
   WorldGraphBuilder, AtlasSolver, DistanceMatrix, TravelLinkFactory, access
@@ -41,6 +41,7 @@ function AtlasQuestRouter:init(deps)
     self.interactions = (deps.interactionFactory or ns.HeadlessUserInteractionFactory.new())
         :createInteractions({
             onNext = function() self:nextLeg() end,
+            onBack = function() self:previousLeg() end,
             onReplan = function() self:plan() end,
         })
     -- Observer: any change of the quest log invalidates the current plan
@@ -173,8 +174,70 @@ function AtlasQuestRouter:nextLeg()
     return plan:currentLeg()
 end
 
-function AtlasQuestRouter:setTrackerVisible(visible)
-    if self.interactions.tracker then self.interactions.tracker:setVisible(visible) end
+function AtlasQuestRouter:previousLeg()
+    local plan = self.currentPlan
+    if not plan then return self:say("No route yet. Type /aqr plan") end
+    local leg = plan:back()
+    if leg and leg.kind == "step" then leg.step.done = false end
+    for _, interaction in pairs(self.interactions) do interaction:showProgress(plan, self.currentLines) end
+    return leg
+end
+
+-- guide auto-advance --------------------------------------------------------
+-- Called by Platform/GameEventBridge.lua when something happens in the game.
+-- The guide only moves when the event matches the current step, or a step that
+-- is reached through travel legs only (the player took a shortcut).
+
+local function sameTitle(a, b) return a and b and a:lower() == b:lower() end
+
+--- Index of the first leg from the cursor matching `predicate`, if only travel legs lie before it.
+function AtlasQuestRouter:findAhead(predicate)
+    local plan = self.currentPlan
+    if not plan then return nil end
+    for i = plan.cursor, #plan.legs do
+        local leg = plan.legs[i]
+        if predicate(leg) then return i end
+        if leg.kind == "step" then return nil end
+    end
+end
+
+function AtlasQuestRouter:jumpPast(index)
+    local plan = self.currentPlan
+    plan.cursor = index
+    return self:nextLeg()
+end
+
+function AtlasQuestRouter:completeStep(kind, title)
+    local index = self:findAhead(function(leg)
+        return leg.kind == "step" and leg.step.kind == kind and sameTitle(leg.step.quest.name, title)
+    end)
+    if index then return self:jumpPast(index) end
+    -- not next in the guide: still remember it, so a re-plan skips it
+    for _, quest in ipairs(self.questLog:all()) do
+        if sameTitle(quest.name, title) then
+            for _, step in ipairs(quest.steps) do
+                if step.kind == kind and not step.done then self.questLog:markStepDone(step); break end
+            end
+        end
+    end
+end
+
+function AtlasQuestRouter:onQuestAccepted(title) return self:completeStep("accept", title) end
+function AtlasQuestRouter:onQuestTurnedIn(title) return self:completeStep("turnin", title) end
+function AtlasQuestRouter:onObjectivesComplete(title)
+    local index = self:findAhead(function(leg)
+        return leg.kind == "step" and leg.step.kind == "objective" and sameTitle(leg.step.quest.name, title)
+    end)
+    if index then return self:jumpPast(index) end
+end
+
+function AtlasQuestRouter:onArrived(place)
+    local index = self:findAhead(function(leg) return leg.kind == "travel" and leg.to == place end)
+    if index then return self:jumpPast(index) end
+end
+
+function AtlasQuestRouter:setGuideVisible(visible)
+    if self.interactions.guide then self.interactions.guide:setVisible(visible) end
 end
 
 function AtlasQuestRouter:runCommand(input)
@@ -202,20 +265,24 @@ if type(CreateFrame) == "function" and type(SlashCmdList) == "table" then
     local gameApi = ns.WowGameApi.new(_G)
     local router = AtlasQuestRouter.new({
         gameApi = gameApi,
-        interactionFactory = ns.WowUserInteractionFactory.new(gameApi, CreateFrame, UIParent),
+        interactionFactory = ns.WowUserInteractionFactory.new(gameApi, CreateFrame, UIParent, ns.WorldData),
         scheduler = ns.FrameScheduler.new(CreateFrame),
     })
     ns.router = router
+    local bridge = ns.GameEventBridge.new(router, gameApi, router.resolver)
 
     local events = CreateFrame("Frame")
     events:RegisterEvent("ADDON_LOADED")
     events:RegisterEvent("PLAYER_LOGOUT")
-    events:SetScript("OnEvent", function(_, event, name)
-        if event == "ADDON_LOADED" and name == ADDON_NAME then
+    bridge:attach(events)
+    events:SetScript("OnEvent", function(_, event, arg1)
+        if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
             router:load(_G.AtlasQuestRouterDB)
             gameApi:print("loaded. Type /aqr help")
         elseif event == "PLAYER_LOGOUT" then
             _G.AtlasQuestRouterDB = router:save()
+        elseif router.currentPlan then
+            bridge:handle(event, arg1)
         end
     end)
 

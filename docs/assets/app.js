@@ -258,10 +258,27 @@
     $("#heroStats").innerHTML = [[D.locations.length, "places on the map"], [D.quests.length, "quests in the catalogue"], ["11", "design patterns"], ["7 / 7", "FSMs identical to Java ATLAS"]]
       .map(([b, s]) => `<li><b>${b}</b><span>${s}</span></li>`).join("");
     const plan = A.plan(D, { faction: "Alliance", class: "WARRIOR", groundSpeed: 11.2, bindLocation: "stormwind", cooldowns: {} }, questsFor(DEMO.Alliance), "goldshire");
-    $("#mockTotal").textContent = fmt(plan.totalSeconds);
-    const colors = { step: "#ffd100" }; for (const k in MODE) colors[k] = MODE[k].hex;
-    $("#mockLines").innerHTML = plan.legs.slice(0, 10).map((l) => `<li style="color:${colors[l.kind === "step" ? "step" : l.mode]}">${legLine(l).title}</li>`).join("");
-    $("#mockProg").textContent = `1 / ${plan.legs.length}`;
+    const VERB = { walk: "Walk to", flight: "Fly to", boat: "Take the boat to", zeppelin: "Take the zeppelin to", tram: "Take the tram to", teleport: "Teleport to", hearth: "Hearthstone to" };
+    const instr = (l) => l.kind === "step" ? stepText(l.quest, l.step) : `${VERB[l.mode]} ${LOC.get(l.to).name}`;
+    const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+    let cur = 0;
+    const show = () => {
+      const l = plan.legs[cur], target = l.kind === "step" ? l.location : l.to, from = l.kind === "step" ? l.location : l.from;
+      let left = 0; for (let i = cur; i < plan.legs.length; i++) left += plan.legs[i].seconds;
+      $("#mockTotal").textContent = `${fmt(left)} left`;
+      $("#mockIcon").textContent = l.kind === "step" ? (l.step.kind === "accept" ? "!" : l.step.kind === "turnin" ? "?" : "⚔") : MODE[l.mode].icon;
+      $("#mockStep").textContent = instr(l);
+      $("#mockDetail").textContent = l.kind === "step" ? `at ${LOC.get(l.location).name}` : `from ${LOC.get(l.from).name}, about ${fmt(l.seconds)}`;
+      const a = LOC.get(from), b = LOC.get(target), ang = Math.atan2(b.x - a.x, -(b.y - a.y));
+      if (from === target) { $("#mockArrow").style.opacity = .25; $("#mockDir").textContent = `You are there: ${b.name}`; }
+      else { $("#mockArrow").style.opacity = 1; $("#mockArrow").style.transform = `rotate(${ang - Math.PI / 2}rad)`;
+        $("#mockDir").textContent = `${b.name}, to the ${COMPASS[Math.round(((ang / (2 * Math.PI)) * 8 + 8)) % 8]}`; }
+      $("#mockBar").style.width = `${(cur / plan.legs.length) * 100}%`;
+      $("#mockLines").innerHTML = plan.legs.slice(cur + 1, cur + 4).map((x) => `<li>${instr(x)}</li>`).join("");
+      $("#mockProg").textContent = `${cur + 1} / ${plan.legs.length}`;
+    };
+    show();
+    setInterval(() => { cur = (cur + 1) % plan.legs.length; show(); }, 2600);
   }
 
   // ------------------------------------------------------------ step-by-step visualizer
@@ -391,7 +408,7 @@
   // ------------------------------------------------------------ architecture
   const PATTERNS = [
     ["Facade", "AtlasQuestRouter.lua", "Structural", "One small API (addQuest, plan, nextLeg) in front of ~15 classes. Slash commands, buttons, events and tests call only this object, so the subsystem can change without touching them."],
-    ["Factory Method", "UI/UserInteractionFactory.lua", "Creational", "The abstract creator asks createInteraction(kind); WowUserInteractionFactory returns a chat printer and tracker window, the headless factory returns in-memory recorders for tests. The facade never knows which."],
+    ["Factory Method", "UI/UserInteractionFactory.lua", "Creational", "The abstract creator asks createInteraction(kind); WowUserInteractionFactory returns a chat printer and the guide window, the headless factory returns in-memory recorders for tests. The facade never knows which."],
     ["Factory Method", "Travel/TravelLinkFactory.lua · Atlas/AtlasSolverFactory.lua", "Creational", "The builder asks for a 'boat' link and gets a BoatLink; the planner asks for the 'quest' ATLAS profile and gets a fully wired solver. New modes and profiles register without editing callers."],
     ["Chain of Responsibility", "Travel/AccessRules.lua", "Behavioural", "Faction → Class → Level → Cooldown. Each rule rejects a travel link or passes it on, so adding a new restriction is one class and one link in the chain."],
     ["Chain of Responsibility + Command", "UI/Commands.lua", "Behavioural", "Each /aqr verb is a command object; the request walks the chain until a handler accepts it, and an UnknownCommand at the end always answers."],
@@ -399,13 +416,13 @@
     ["Strategy", "Atlas/DfsOrderings.lua · Atlas/ScoreComponents.lua", "Behavioural", "DFS visiting orders and each of the paper's six scoring terms are interchangeable objects behind small interfaces."],
     ["Composite", "Atlas/EdgeScorer.lua", "Structural", "EdgeScorer is an IScoreComponent made of IScoreComponents, so ATLAS asks one object for score(e)."],
     ["Observer", "Core/EventBus.lua · Domain/QuestLog.lua", "Behavioural", "The quest log publishes QUEST_ADDED, QUEST_REMOVED and similar events; the facade subscribes and drops a stale plan. The log knows no listeners."],
-    ["Adapter", "Platform/GameApi.lua", "Structural", "WowGameApi adapts WoW globals (UnitFactionGroup, GetQuestLogTitle…) to IGameApi. It is the only file that touches the client, which is why everything else runs in tests."],
+    ["Adapter", "Platform/GameApi.lua · Platform/GameEventBridge.lua", "Structural", "WowGameApi adapts WoW functions (UnitFactionGroup, GetQuestLogTitle…) to IGameApi; GameEventBridge turns WoW events (QUEST_ACCEPTED, ZONE_CHANGED…) into guide steps. Everything else runs in tests outside the client."],
     ["Repository", "Domain/QuestLog.lua", "Domain", "Stores tracked quests, serialises them to SavedVariables and restores them on login."],
     ["Value Object", "Domain/RoutePlan.lua · Graph/Graph.lua (Edge)", "Domain", "A plan is plain data plus a cursor: legs, total time, meta. Easy to render in chat, in the tracker and on this page."],
   ];
   $("#patterns").innerHTML = PATTERNS.map(([n, w, tag, why]) => `<article class="pattern"><span class="tag">${tag}</span><h3>${n}</h3><span class="where">${w}</span><p>${why}</p></article>`).join("");
   const SOLID = [
-    ["S", "Single Responsibility", "Graph stores topology, AtlasSolver routes, WorldGraphBuilder builds, LocationResolver matches names, TrackerInteraction draws. Each file opens with one sentence saying what it is for."],
+    ["S", "Single Responsibility", "Graph stores topology, AtlasSolver routes, WorldGraphBuilder builds, LocationResolver matches names, GuideInteraction draws. Each file opens with one sentence saying what it is for."],
     ["O", "Open / Closed", "New travel mode: subclass TravelLink and register it. New rule: add an AccessRule. New scoring term: add an IScoreComponent. New command: add a CommandHandler. Nothing existing is edited."],
     ["L", "Liskov Substitution", "Any TravelLink, AccessRule, UserInteraction or IDfsOrdering can stand in for another; tests swap WowGameApi for StubGameApi and the facade behaves the same."],
     ["I", "Interface Segregation", "Small interfaces: IScoreComponent has one method, IScheduler one, IRequirementSet five. AtlasSolver sees only IRequirementSet, not the whole quest model."],
@@ -415,7 +432,7 @@
 
   // ------------------------------------------------------------ diagrams
   const DIAGRAMS = [
-    ["Simplified class diagram", "class-diagram-simplified", "12 classes, the important methods and the pattern of each. Small enough to draw by hand."],
+    ["Simplified class diagram", "class-diagram-simplified", "12 classes, the important methods and the pattern of each, on one page."],
     ["Full class diagram", "class-diagram-full", "Every class, interface, attribute and method of the addon. Click to open full size."],
     ["Sequence: /aqr plan", "sequence-plan", "What happens between typing /aqr plan and seeing the route."],
     ["Layers", "packages", "Folders and the direction of dependencies."],

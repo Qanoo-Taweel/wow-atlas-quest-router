@@ -2,7 +2,7 @@
   Domain/QuestLog.lua
   PATTERN: Repository (+ Observer through EventBus).
 
-  Holds the quests the player is tracking. Publishes events so the tracker UI
+  Holds the quests the player is tracking. Publishes events so the guide window
   and the planner react without the log knowing about them.
   SOLID: Single Responsibility (storage of tracked quests only).
 ----------------------------------------------------------------------------]]

@@ -31,5 +31,5 @@ loop while R has available edges (one game frame each)
 end
 Atlas-->>Planner: tour
 Planner-->>Router: RoutePlan
-Router->>UI: showPlan(plan) on chat + tracker
-UI-->>Player: route in chat and tracker window
+Router->>UI: showPlan(plan) on chat + guide window
+UI-->>Player: first step + arrow in the guide window

@@ -35,6 +35,15 @@ function LocationResolver:byText(text)
     return partial
 end
 
+--- Exact subzone name match only (used to detect arrival; no guessing).
+function LocationResolver:exactSubzone(subzone)
+    if not subzone or subzone == "" then return nil end
+    local needle = subzone:lower()
+    for _, id in ipairs(self.world.locationOrder) do
+        if self.world.locations[id].name:lower() == needle then return id end
+    end
+end
+
 --- Best location for the player's current subzone / zone.
 function LocationResolver:fromGame(subzone, zone)
     local exact = self:byText(subzone)

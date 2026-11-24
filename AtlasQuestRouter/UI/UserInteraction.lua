@@ -3,7 +3,7 @@
   Every way the addon talks to the player is a UserInteraction:
 
     ChatInteraction      - prints to the chat frame
-    TrackerInteraction   - the on-screen route tracker window
+    GuideInteraction     - the step-by-step guide window with an arrow
     HeadlessInteraction  - collects output in memory (tests, website export)
 
   The facade only knows the abstract UserInteraction (Liskov + Dependency
@@ -28,7 +28,7 @@ function ChatInteraction:showPlan(plan, lines)
     self.api:print(("ATLAS route: %d legs, %s total (%d iterations, %.0f ms)"):format(
         #plan.legs, ns.RoutePlan.formatSeconds(plan.totalSeconds), plan.meta.iterations or 0, plan.meta.elapsedMs or 0))
     for i = 1, math.min(#lines, 8) do self.api:print(lines[i]) end
-    if #lines > 8 then self.api:print(("... %d more legs in the tracker (/aqr show)"):format(#lines - 8)) end
+    if #lines > 8 then self.api:print(("... %d more steps in the guide window (/aqr show)"):format(#lines - 8)) end
 end
 function ChatInteraction:showProgress(plan, lines)
     local leg = lines[plan.cursor]

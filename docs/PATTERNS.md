@@ -14,7 +14,7 @@ The file names are clickable; every file also starts with a comment that repeats
 
 **Why here:** planning a route touches the quest log, the location resolver, the world graph builder, the travel link
 factory, the access rule chain, the distance matrix, the ATLAS solver factory, the scheduler and two kinds of output.
-Slash commands, tracker buttons, game events and tests would all need to know that order. With the facade they call
+Slash commands, guide window buttons, game events and tests would all need to know that order. With the facade they call
 `router:plan()` and nothing else.
 
 **Without it:** every command handler would repeat the same 10-line setup and break whenever the planner changes.
@@ -24,12 +24,12 @@ Slash commands, tracker buttons, game events and tests would all need to know th
 **What:** a creator class declares a method that returns a product; subclasses decide which concrete product.
 
 **Where:** abstract `UserInteractionFactory` with the template method `createInteractions()` that calls the factory
-method `createInteraction(kind)`. `WowUserInteractionFactory` returns `ChatInteraction` and `TrackerInteraction`;
+method `createInteraction(kind)`. `WowUserInteractionFactory` returns `ChatInteraction` and `GuideInteraction` (the step-by-step guide window);
 `HeadlessUserInteractionFactory` returns `HeadlessInteraction` (in-memory, for tests).
 
-**Why here:** the facade must "show the plan to the user", but in the game that means chat + a window and in tests it
-means recording to memory. The facade receives a factory and never names a concrete UI class. This is the
-"UserInteractionFactory" the course asked for: it generalises all user interactions behind `IUserInteraction`.
+**Why here:** the facade must "show the plan to the user", but in the game that means chat + the guide window and in tests it
+means recording to memory. The facade receives a factory and never names a concrete UI class, so
+`UserInteractionFactory` generalises every user interaction behind `IUserInteraction`.
 
 **Without it:** `if inGame then ... else ... end` would be spread over the facade, and tests would need fake frames.
 
@@ -88,14 +88,16 @@ The facade subscribes and throws away the current plan when the quest set change
 
 **Why here:** the quest log must not depend on the UI or the planner (Dependency Inversion).
 
-## 10. Adapter — `Platform/GameApi.lua`
+## 10. Adapter — `Platform/GameApi.lua`, `Platform/GameEventBridge.lua`
 
 **Where:** `IGameApi` (`playerProfile`, `currentLocationName`, `questLogTitles`, `print`, `now`);
 `WowGameApi` adapts the WoW globals (`UnitFactionGroup`, `UnitClass`, `GetBindLocation`, `GetItemCooldown`,
-`GetZoneText`, `GetQuestLogTitle`, `DEFAULT_CHAT_FRAME`); `StubGameApi` is the test double.
+`GetZoneText`, `GetQuestLogTitle`, `DEFAULT_CHAT_FRAME`); `StubGameApi` is the test double. `GameEventBridge` adapts WoW *events* (`QUEST_ACCEPTED`,
+`QUEST_TURNED_IN`, `QUEST_LOG_UPDATE`, `ZONE_CHANGED`) into guide calls (`onQuestAccepted`, `onArrived`, ...), which is
+how the guide moves on by itself.
 
-**Why here:** the WoW API only exists inside the client. Because one adapter is the only door to it, 31 of 32 files run
-and are tested in plain Lua.
+**Why here:** the WoW API only exists inside the client. Because these two adapters are the only doors to it, every other file runs
+and is tested in plain Lua.
 
 ## 11. Repository and Value Object — `Domain/QuestLog.lua`, `Domain/RoutePlan.lua`
 
@@ -108,7 +110,7 @@ data with a few helpers; they are passed around and rendered, never mutated by o
 
 | Principle | Example you can point to |
 |---|---|
-| Single Responsibility | `LocationResolver` only maps names to places; `TrackerInteraction` only draws. |
+| Single Responsibility | `LocationResolver` only maps names to places; `GuideInteraction` only draws. |
 | Open/Closed | `TravelLinkFactory:register`, `AtlasSolverFactory.register`, new `AccessRule`, new `CommandHandler`. |
 | Liskov Substitution | `StubGameApi` replaces `WowGameApi`; every `TravelLink` subclass is used through `seconds()`. |
 | Interface Segregation | `IScheduler` has one method; ATLAS only sees `IRequirementSet`. |

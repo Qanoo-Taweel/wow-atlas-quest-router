@@ -1,5 +1,5 @@
 ---
-title: AtlasQuestRouter - simplified (hand-drawable, methods kept)
+title: AtlasQuestRouter - simplified class diagram
 ---
 classDiagram
 direction LR
@@ -8,6 +8,8 @@ class AtlasQuestRouter {
   +addQuest(id)
   +plan()
   +nextLeg()
+  +onQuestAccepted(title)
+  +onArrived(place)
   +runCommand(input)
   +save() / load()
 }
@@ -23,6 +25,7 @@ class UserInteractionFactory {
   +createInteraction(kind)
 }
 class UserInteraction {
+  <<Chat / GuideInteraction>>
   +notify(msg)
   +showPlan(plan)
   +showProgress(plan)
