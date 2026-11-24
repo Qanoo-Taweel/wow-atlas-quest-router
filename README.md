@@ -10,7 +10,7 @@ the Deeprun Tram, class teleports, the hearthstone) are planned with the **ATLAS
 (Kabaca, Samir and Takan; original implementation: [savastakan/atlas](https://github.com/savastakan/atlas)).
 ATLAS is the only routing algorithm in the project.
 
-**Authors:** [Qanoo-Taweel](https://github.com/Qanoo-Taweel) · [zynparcn](https://github.com/zynparcn)
+**Authors:** [Qanoo-Taweel](https://github.com/Qanoo-Taweel)(Qunoo A K Taweel) · [zynparcn](https://github.com/zynparcn)(Zeynep Arıcan)
 
 **Website:** <https://qanoo-taweel.github.io/wow-atlas-quest-router/> (live route planner, ATLAS explained step by step, diagrams)
 
