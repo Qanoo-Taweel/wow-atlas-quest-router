@@ -108,7 +108,7 @@ data with a few helpers; they are passed around and rendered, never mutated by o
 
 ## SOLID checklist
 
-| Principle | Example you can point to |
+| Principle | Where in the code |
 |---|---|
 | Single Responsibility | `LocationResolver` only maps names to places; `GuideInteraction` only draws. |
 | Open/Closed | `TravelLinkFactory:register`, `AtlasSolverFactory.register`, new `AccessRule`, new `CommandHandler`. |

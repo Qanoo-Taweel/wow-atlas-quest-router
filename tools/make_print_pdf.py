@@ -74,7 +74,7 @@ def main() -> None:
                  '<p class="who">Qunoo A K Taweel — 23291712<br>Zeynep Arıcan — 24290319</p>'
                  '<p class="src">Source: github.com/Qanoo-Taweel/wow-atlas-quest-router · diagrams generated from '
                  'docs/diagrams/*.mmd</p></div></section>')
-        doc = """<!doctype html><html><head><meta charset="utf-8"><style>
+        doc = """<!doctype html><html><head><meta charset="utf-8"><title>Atlas Quest Router diagrams</title><style>
 @page{size:A4 landscape;margin:8mm} @page port{size:A4 portrait;margin:8mm}
 body{margin:0;font-family:Helvetica,Arial,sans-serif;color:#111}
 section{width:281mm;height:193mm;display:flex;flex-direction:column;page-break-after:always;overflow:hidden}

@@ -10,7 +10,7 @@
 
   Why a facade: the subsystem is large and changes often; the callers are
   many (commands, buttons, events, tests). The facade keeps those callers
-  stable and short, and gives the professor one class to start reading from.
+  stable and short, and gives a reader one class to start from.
 
   At the bottom: bootstrap code that only runs inside World of Warcraft.
 ----------------------------------------------------------------------------]]
