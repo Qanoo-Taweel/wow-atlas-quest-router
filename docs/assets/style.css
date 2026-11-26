@@ -56,7 +56,28 @@ main{max-width:1240px;margin:0 auto;padding:0 28px}
 .tm-next ol{list-style:none;margin:0;padding:0;min-width:0;flex:1}
 .tm-next li{padding:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#d7d2c4}
 .tm-foot{display:flex;gap:8px;align-items:center;margin-top:10px}
-.tm-btn{background:linear-gradient(#8a1e14,#5c120c);border:1px solid #b3863b;color:#f6d77c;padding:2px 12px;border-radius:4px;font-size:.78rem}
+.tm-btn{background:linear-gradient(#8a1e14,#5c120c);border:1px solid #b3863b;color:#f6d77c;padding:5px 14px;border-radius:4px;font:600 .8rem Inter,system-ui,sans-serif;cursor:pointer;-webkit-appearance:none;appearance:none;touch-action:manipulation}
+.tm-btn:hover{background:linear-gradient(#a8291c,#701810);color:#fff3c4}
+.tm-btn:active{transform:translateY(1px)}
+.tm-btn:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+.tm-title{display:inline-flex;align-items:center;gap:8px}
+.tm-avatar{width:26px;height:36px;margin:-10px 0 -4px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.tracker-mock.hop .tm-avatar{animation:hop .45s ease}
+@keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
+.princess .bob{transform-box:fill-box;transform-origin:50% 100%}
+.princess.walking .bob{animation:bob .32s ease-in-out infinite alternate}
+@keyframes bob{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-3px) rotate(4deg)}}
+.sub-head{margin:40px 0 16px}.sub-head h3{margin:0 0 4px;font-size:1.25rem}.sub-head p{margin:0}
+.more{margin-top:18px;overflow:hidden}
+.more>summary{cursor:pointer;padding:14px 20px;font-weight:600;color:var(--gold2);list-style:none;display:flex;align-items:center;gap:10px}
+.more>summary::-webkit-details-marker{display:none}
+.more>summary::before{content:"▸";color:var(--gold);transition:transform .2s}
+.more[open]>summary::before{transform:rotate(90deg)}
+.more[open]>summary{border-bottom:1px solid var(--line)}
+.more-body{padding:18px 20px}
+.more-body .formula,.more-body .proof{margin-top:0}
+.more-body .proof{margin-top:18px}
+@media (prefers-reduced-motion:reduce){.princess.walking .bob,.tracker-mock.hop .tm-avatar{animation:none}}
 .tm-prog{margin-left:auto;color:var(--muted)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);
@@ -101,7 +122,8 @@ select{width:100%;background:#0d1220;color:var(--text);border:1px solid var(--li
 .stat span{color:var(--muted);font-size:.8rem}
 .warn{grid-column:1/-1;padding:10px 14px;border-color:#5a3b1a;background:#1d150b;color:#f0c58a;font-size:.88rem}
 
-.itinerary{margin-top:20px;padding:18px 20px}
+.itinerary{margin-top:20px}
+.itinerary #itMeta{margin-left:auto;font-weight:400;font-size:.82rem}
 .it-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .it-head span{color:var(--muted);font-size:.85rem}
 #itinerary{list-style:none;margin:8px 0 0;padding:0;columns:2;column-gap:28px}
@@ -152,7 +174,7 @@ select{width:100%;background:#0d1220;color:var(--text);border:1px solid var(--li
 .pattern .where{font:12px "JetBrains Mono";color:var(--teal);margin-bottom:8px;display:block;word-break:break-all}
 .pattern p{margin:0;color:#c6cad3;font-size:.88rem}
 .pattern .tag{display:inline-block;font-size:.7rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px;margin-bottom:8px}
-.solid{padding:20px;margin-top:18px;overflow-x:auto}
+.solid{overflow-x:auto}
 .solid table{width:100%;border-collapse:collapse;font-size:.9rem}
 .solid td,.solid th{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 .solid td:first-child{font-family:Cinzel;color:var(--gold2);font-size:1.3rem;width:48px}
@@ -168,7 +190,7 @@ select{width:100%;background:#0d1220;color:var(--text);border:1px solid var(--li
 .install{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .steps{padding:22px 22px 22px 44px;margin:0}
 .steps li{margin-bottom:12px;color:#c6cad3}
-.commands{padding:20px}
+.commands{padding:0;align-self:start}
 pre{margin:0;background:#0d1220;border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto}
 pre code{background:none;border:0;padding:0;font-size:.82rem;color:#cfe8ff}
 

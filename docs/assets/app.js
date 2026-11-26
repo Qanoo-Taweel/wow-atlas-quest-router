@@ -162,6 +162,18 @@
     const s = LOC.get(plan.start);
     el("circle", { cx: s.x, cy: s.y, r: 9, "data-r": 9, fill: "none", stroke: "#fff", "stroke-width": 2, "data-w": 2, opacity: .85 }, gMarks);
     zoomTo(plan);
+    placePrincess(s.x, s.y, 1);
+  }
+
+  // the player is drawn as a little princess (symbol #princess in index.html), feet on the spot
+  let mapK = 1;
+  function placePrincess(x, y, dir, walking) {
+    let g = gTraveler.querySelector(".princess");
+    if (!g) { g = el("g", { class: "princess" }, gTraveler); const b = el("g", { class: "bob" }, g); el("use", { href: "#princess" }, b); }
+    const sc = 0.62 * mapK;
+    g.setAttribute("transform", `translate(${x},${y}) scale(${sc * (dir < 0 ? -1 : 1)},${sc}) translate(-20,-54)`);
+    g.classList.toggle("walking", !!walking);
+    g.dataset.x = x; g.dataset.y = y; g.dataset.dir = dir;
   }
 
   // zoom the map to the part of the world the route uses
@@ -181,6 +193,7 @@
   }
   // keep labels, dots and lines the same size on screen whatever the zoom
   function applyScale(k) {
+    mapK = k; const pr = gTraveler && gTraveler.querySelector(".princess"); if (pr) placePrincess(+pr.dataset.x, +pr.dataset.y, +pr.dataset.dir, pr.classList.contains("walking"));
     svg.querySelectorAll("[data-r]").forEach((e) => { e.setAttribute("r", +e.dataset.r * k); e.style.strokeWidth = 1.5 * k; });
     svg.querySelectorAll("[data-w]").forEach((e) => e.setAttribute("stroke-width", +e.dataset.w * k));
     svg.querySelectorAll("[data-fs]").forEach((e) => { e.style.fontSize = (+e.dataset.fs * k) + "px"; if (e.dataset.sw) e.style.strokeWidth = (+e.dataset.sw * k) + "px"; });
@@ -221,18 +234,20 @@
         : `<span class="leg-ic" style="background:${MODE[leg.mode].hex}">${MODE[leg.mode].icon}</span>`;
       return `<li class="${leg.kind === "step" ? "leg-step" : ""}" data-i="${i}">${ic}<span>${t.title}${t.sub ? `<span class="leg-sub">${t.sub}</span>` : ""}</span><span class="leg-t">${fmt(clock)}</span></li>`;
     }).join("");
-    $("#itMeta").textContent = `graph: ${plan.nodes} places · ${plan.edges} edges · ${plan.required} required`;
+    $("#itMeta").textContent = `(${plan.legs.length} steps)`;
   }
 
   // ------------------------------------------------------------ playback
   let raf = null;
-  function stopPlay() { state.playing = false; if (raf) cancelAnimationFrame(raf); raf = null; $("#playBtn").textContent = "▶ Play route"; if (gTraveler) gTraveler.innerHTML = ""; }
+  function stopPlay() {
+    state.playing = false; if (raf) cancelAnimationFrame(raf); raf = null; $("#playBtn").textContent = "▶ Play route";
+    const pr = gTraveler && gTraveler.querySelector(".princess"); if (pr) pr.classList.remove("walking");
+  }
   $("#playBtn").addEventListener("click", () => {
     if (state.playing) return stopPlay();
     const plan = state.plan; if (!plan) return;
     state.playing = true; $("#playBtn").textContent = "■ Stop";
-    gTraveler.innerHTML = ""; const k = Math.pow(+svg.getAttribute("viewBox").split(" ")[2] / 1000, 0.6); const dot = el("circle", { r: 6 * k, class: "traveler", "stroke-width": 3 * k }, gTraveler);
-    const s0 = LOC.get(plan.start); dot.setAttribute("cx", s0.x); dot.setAttribute("cy", s0.y);
+    const s0 = LOC.get(plan.start); let px = s0.x, py = s0.y, dir = 1; placePrincess(px, py, dir, true);
     let i = 0, t0 = null;
     const items = [...$("#itinerary").children];
     const tick = (now) => {
@@ -245,7 +260,8 @@
       const p = Math.min(1, (now - t0) / dur);
       if (leg.kind === "travel" && leg._path) {
         const L = leg._path.getTotalLength(), pt = leg._path.getPointAtLength(L * p);
-        dot.setAttribute("cx", pt.x); dot.setAttribute("cy", pt.y);
+        if (Math.abs(pt.x - px) > 0.3) dir = pt.x < px ? -1 : 1;
+        px = pt.x; py = pt.y; placePrincess(px, py, dir, true);
       }
       if (p >= 1) { i++; t0 = null; }
       raf = requestAnimationFrame(tick);
@@ -255,9 +271,7 @@
 
   // ------------------------------------------------------------ hero
   function hero() {
-    $("#heroStats").innerHTML = [[D.locations.length, "places on the map"], [D.quests.length, "quests in the catalogue"], ["11", "design patterns"], ["7 / 7", "FSMs identical to Java ATLAS"]]
-      .map(([b, s]) => `<li><b>${b}</b><span>${s}</span></li>`).join("");
-    const plan = A.plan(D, { faction: "Alliance", class: "WARRIOR", groundSpeed: 11.2, bindLocation: "stormwind", cooldowns: {} }, questsFor(DEMO.Alliance), "goldshire");
+    let plan = A.plan(D, { faction: "Alliance", class: "WARRIOR", groundSpeed: 11.2, bindLocation: "stormwind", cooldowns: {} }, questsFor(DEMO.Alliance), "goldshire");
     const VERB = { walk: "Walk to", flight: "Fly to", boat: "Take the boat to", zeppelin: "Take the zeppelin to", tram: "Take the tram to", teleport: "Teleport to", hearth: "Hearthstone to" };
     const instr = (l) => l.kind === "step" ? stepText(l.quest, l.step) : `${VERB[l.mode]} ${LOC.get(l.to).name}`;
     const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
@@ -277,8 +291,19 @@
       $("#mockLines").innerHTML = plan.legs.slice(cur + 1, cur + 4).map((x) => `<li>${instr(x)}</li>`).join("");
       $("#mockProg").textContent = `${cur + 1} / ${plan.legs.length}`;
     };
+    const card = $(".tracker-mock");
+    const hop = () => { card.classList.remove("hop"); void card.offsetWidth; card.classList.add("hop"); };
     show();
-    setInterval(() => { cur = (cur + 1) % plan.legs.length; show(); }, 2600);
+    // plays by itself until someone presses a button, then the buttons take over
+    let timer = setInterval(() => { cur = (cur + 1) % plan.legs.length; show(); }, 2600);
+    const manual = () => { if (timer) { clearInterval(timer); timer = null; } };
+    $("#mockBack").addEventListener("click", () => { manual(); cur = Math.max(0, cur - 1); show(); hop(); });
+    $("#mockSkip").addEventListener("click", () => { manual(); cur = Math.min(plan.legs.length - 1, cur + 1); show(); hop(); });
+    $("#mockReplan").addEventListener("click", () => {
+      manual();
+      plan = A.plan(D, { faction: "Alliance", class: "WARRIOR", groundSpeed: 11.2, bindLocation: "stormwind", cooldowns: {} }, questsFor(DEMO.Alliance), "goldshire");
+      cur = 0; show(); hop(); $("#mockTotal").textContent = "New route planned";
+    });
   }
 
   // ------------------------------------------------------------ step-by-step visualizer
