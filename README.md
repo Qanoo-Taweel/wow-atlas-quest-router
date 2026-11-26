@@ -287,8 +287,8 @@ To open it without internet access, download the repository and open `docs/index
 
 ## 10. Authors and credits
 
-* [Qanoo-Taweel](https://github.com/Qanoo-Taweel)
-* [zynparcn](https://github.com/zynparcn)
+* **Qunoo A K Taweel**, GitHub [Qanoo-Taweel](https://github.com/Qanoo-Taweel)
+* **Zeynep Arıcan**, GitHub [zynparcn](https://github.com/zynparcn)
 
 
 * ATLAS: H. Kabaca, A. Samir, S. Takan, *Benchmarking Atlas: A High-Performance Heuristic for Large-Scale Arc Routing
