@@ -1,5 +1,5 @@
 ---
-title: AtlasQuestRouter - full class diagram
+title: AtlasQuestRouter - full class diagram — Qunoo A K Taweel (23291712), Zeynep Arıcan (24290319)
 ---
 classDiagram
 direction TB
@@ -36,6 +36,11 @@ class AtlasQuestRouter {
   +save() table
   +load(saved)
   +say(message)
+  +currentLocation() string
+  +profile() table
+  -completeStep(kind, title)
+  -findAhead(predicate) int
+  -jumpPast(index)
 }
 
 %% ===================== Commands (Command + Chain of Responsibility) =====================
@@ -51,10 +56,19 @@ class CommandHandler {
 }
 class HelpCommand
 class AddCommand
+class RemoveCommand
+class ListCommand
+class ClearCommand
 class PlanCommand
 class NextCommand
 class BackCommand
+class ShowCommand
+class HideCommand
+class FromCommand
+class SpeedCommand
+class HearthCommand
 class ImportCommand
+class DemoCommand
 class UnknownCommand
 class CommandChain {
   <<utility>>
@@ -63,10 +77,19 @@ class CommandChain {
 }
 CommandHandler <|-- HelpCommand
 CommandHandler <|-- AddCommand
+CommandHandler <|-- RemoveCommand
+CommandHandler <|-- ListCommand
+CommandHandler <|-- ClearCommand
 CommandHandler <|-- PlanCommand
 CommandHandler <|-- NextCommand
 CommandHandler <|-- BackCommand
+CommandHandler <|-- ShowCommand
+CommandHandler <|-- HideCommand
+CommandHandler <|-- FromCommand
+CommandHandler <|-- SpeedCommand
+CommandHandler <|-- HearthCommand
 CommandHandler <|-- ImportCommand
+CommandHandler <|-- DemoCommand
 CommandHandler <|-- UnknownCommand
 CommandHandler --> CommandHandler : next
 CommandChain ..> CommandHandler : builds
@@ -83,6 +106,8 @@ class UserInteraction {
   <<abstract>>
   +notify(message)*
   +setVisible(bool)
+  +showPlan(plan, lines)
+  +showProgress(plan, lines)
 }
 class ChatInteraction {
   -api: IGameApi
@@ -97,6 +122,11 @@ class GuideInteraction {
   +bearing(from, to) radians
   +compassName(radians) string
   +updateArrow()
+  +notify(message)
+  +showPlan(plan)
+  +showProgress(plan)
+  +setVisible(bool)
+  +targetOf(plan) string
 }
 class HeadlessInteraction {
   +messages: string[]
@@ -153,6 +183,7 @@ class ImmediateScheduler
 class FrameScheduler {
   -jobs: Job[]
   +tick()
+  +run(fn, onDone)
 }
 class GameEventBridge {
   <<Adapter + Observer>>
@@ -189,6 +220,9 @@ class QuestLog {
   +markStepDone(step)
   +serialize() table
   +restore(saved)
+  +get(id) Quest
+  +count() int
+  +findDefinition(idOrName) table
 }
 class Quest {
   +id: int
@@ -206,6 +240,7 @@ class QuestStep {
   +seconds: number
   +done: bool
   +describe() string
+  +id() string
 }
 class RoutePlan {
   <<Value Object>>
@@ -218,6 +253,7 @@ class RoutePlan {
   +back() Leg
   +isFinished() bool
   +formatSeconds(s)$ string
+  +stepLegs() Leg[]
 }
 class IRequirementSet {
   <<interface>>
@@ -233,6 +269,14 @@ class RequirementSet {
   -dropped: Set
   +add(label, prereqs)
   +allEdges(graph)$ RequirementSet
+  +isRequired(label) bool
+  +isServed(label) bool
+  +isAvailable(label) bool
+  +markServed(label)
+  +drop(label)
+  +hasRemaining() bool
+  +pendingLabels() string[]
+  +availableLabels() string[]
 }
 QuestLog --> EventBus : publishes
 QuestLog *-- Quest
@@ -264,6 +308,8 @@ class WorldGraphBuilder {
   +addQuestSteps(quests) self
   +setStart(location) self
   +result() WorldModel
+  +addLink(mode, from, to, spec) self
+  +addBoth(mode, a, b, spec) self
 }
 class EdgeGate {
   -closedTokens: Set
@@ -297,6 +343,7 @@ class TravelLink {
   +to: string
   +faction: string
   +payload() table
+  +requirements() string[]
 }
 class WalkLink
 class FlightLink
@@ -351,6 +398,13 @@ class Graph {
   +outDegree(node) int
   +inDegree(node) int
   +eachEdge() iterator
+  +hasNode(id) bool
+  +getNode(id) table
+  +nodes() string[]
+  +nodeCount() int
+  +getEdge(label) Edge
+  +edgesFrom(node) Edge[]
+  +edgeCount() int
 }
 class Edge {
   +label: int
@@ -361,7 +415,7 @@ class Edge {
 }
 Graph *-- Edge
 
-%% ===================== ATLAS =====================
+%% ===================== ATLAS solver =====================
 class IRouteSolver {
   <<interface>>
   +solve(graph, start, requirements, ctx) Result
@@ -398,7 +452,20 @@ class LazyArray {
   +get(i)
   +set(i, v)
   +reset()
+  +has(index) bool
 }
+IRouteSolver <|.. AtlasSolver
+AtlasSolverFactory ..> AtlasSolver : creates
+QuestRoutePlanner --> AtlasSolverFactory
+AtlasSolver ..> LocalDag
+AtlasClassic ..> LocalDag
+AtlasSolver *-- LazyArray
+AtlasSolver o-- IDfsOrdering
+AtlasSolver o-- IScoreComponent
+AtlasSolver ..> IRequirementSet
+AtlasSolver ..> Graph
+
+%% ===================== ATLAS scoring (Composite + Strategy) and DFS orderings (Strategy) =====================
 class DistanceMatrix {
   +distance(a, b) number
   +maxDistanceTo(node) number
@@ -422,6 +489,12 @@ class EdgeScorer {
   +paperDefault()$ EdgeScorer
   +adaptTo(graph) self
   +score(label, ctx) number
+  +add(component) self
+}
+class ScoreComponent {
+  <<abstract>>
+  +weight: number
+  +score(label, ctx)* number
 }
 class RequiredComponent
 class ConnectivityComponent
@@ -429,28 +502,19 @@ class EfficiencyComponent
 class SavingsComponent
 class RegretComponent
 class ProximityComponent
-IRouteSolver <|.. AtlasSolver
-AtlasSolverFactory ..> AtlasSolver : creates
-QuestRoutePlanner --> AtlasSolverFactory
-AtlasSolver ..> LocalDag
-AtlasClassic ..> LocalDag
-AtlasSolver *-- LazyArray
-AtlasSolver o-- IDfsOrdering
-AtlasSolver o-- IScoreComponent
-AtlasSolver ..> IRequirementSet
-AtlasSolver ..> Graph
 IDfsOrdering <|.. CheapestFirstOrdering
 IDfsOrdering <|.. RequiredFirstOrdering
 IDfsOrdering <|.. InsertionOrdering
 IDfsOrdering <|.. ExpensiveFirstOrdering
 IDfsOrdering <|.. JavaHashSetOrdering
 IScoreComponent <|.. EdgeScorer
-IScoreComponent <|.. RequiredComponent
-IScoreComponent <|.. ConnectivityComponent
-IScoreComponent <|.. EfficiencyComponent
-IScoreComponent <|.. SavingsComponent
-IScoreComponent <|.. RegretComponent
-IScoreComponent <|.. ProximityComponent
+IScoreComponent <|.. ScoreComponent
+ScoreComponent <|-- RequiredComponent
+ScoreComponent <|-- ConnectivityComponent
+ScoreComponent <|-- EfficiencyComponent
+ScoreComponent <|-- SavingsComponent
+ScoreComponent <|-- RegretComponent
+ScoreComponent <|-- ProximityComponent
 EdgeScorer o-- IScoreComponent : children
 SavingsComponent ..> DistanceMatrix
 ProximityComponent ..> DistanceMatrix

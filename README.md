@@ -10,7 +10,7 @@ the Deeprun Tram, class teleports, the hearthstone) are planned with the **ATLAS
 (Kabaca, Samir and Takan; original implementation: [savastakan/atlas](https://github.com/savastakan/atlas)).
 ATLAS is the only routing algorithm in the project.
 
-**Authors:** [Qanoo-Taweel](https://github.com/Qanoo-Taweel)(Qunoo A K Taweel) · [zynparcn](https://github.com/zynparcn)(Zeynep Arıcan)
+**Authors:** Qunoo A K Taweel (23291712, [Qanoo-Taweel](https://github.com/Qanoo-Taweel)) · Zeynep Arıcan (24290319, [zynparcn](https://github.com/zynparcn))
 
 **Website:** <https://qanoo-taweel.github.io/wow-atlas-quest-router/> (live route planner, ATLAS explained step by step, diagrams)
 
@@ -223,6 +223,7 @@ All diagrams are Mermaid sources in [`docs/diagrams/`](docs/diagrams), rendered 
 
 | Diagram | Files |
 |---|---|
+| **All diagrams, print-ready (A4, one package per page)** | [`AtlasQuestRouter-diagrams.pdf`](docs/diagrams/AtlasQuestRouter-diagrams.pdf) · rebuild with `python3 tools/make_print_pdf.py` |
 | Full class diagram (every class, attribute, method, relation) | [`class-diagram-full.svg`](docs/diagrams/class-diagram-full.svg) · [png](docs/diagrams/class-diagram-full.png) |
 | Simplified class diagram (12 central classes with their methods) | [`class-diagram-simplified.svg`](docs/diagrams/class-diagram-simplified.svg) · [png](docs/diagrams/class-diagram-simplified.png) |
 | Sequence diagram of `/aqr plan` | [`sequence-plan.svg`](docs/diagrams/sequence-plan.svg) |

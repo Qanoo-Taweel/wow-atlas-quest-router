@@ -40,7 +40,8 @@ The complete diagram with every class is [diagrams/class-diagram-full.svg](diagr
  │ «Adapter» IGameApi       │            │ +solve(graph,start,R) │  │   ┌──────────────────────────┐
  │ +playerProfile()         │            │ +extend(graph,start,R)│  └──>│ «Composite + Strategy»   │
  │ +questLogTitles()        │            └───────────────────────┘      │ EdgeScorer               │
- └──────────────────────────┘                                           │ +score(edge) +adaptTo(g) │
+ └──────────────────────────┘                                           │ +score(label, ctx)       │
+                                                                        │ +adaptTo(graph)          │
                                                                         └──────────────────────────┘
 ```
 

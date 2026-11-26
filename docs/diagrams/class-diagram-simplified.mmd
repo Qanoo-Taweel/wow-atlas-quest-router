@@ -1,5 +1,5 @@
 ---
-title: AtlasQuestRouter - simplified class diagram
+title: AtlasQuestRouter - simplified class diagram — Qunoo A K Taweel (23291712), Zeynep Arıcan (24290319)
 ---
 classDiagram
 direction LR
@@ -62,7 +62,7 @@ class AtlasSolver {
 }
 class EdgeScorer {
   <<Composite + Strategy>>
-  +score(edge)
+  +score(label, ctx)
   +adaptTo(graph)
 }
 class IGameApi {
