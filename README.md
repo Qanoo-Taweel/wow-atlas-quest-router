@@ -41,8 +41,18 @@ ATLAS is the only routing algorithm in the project.
 
 ## 1. Install and use
 
-1. Download this repository (green **Code** button → *Download ZIP*) and unzip it.
-2. Copy the folder `AtlasQuestRouter/` into `World of Warcraft/<Forever client folder>/Interface/AddOns/`.
+1. Download this repository (green **Code** button → *Download ZIP*) and unzip it. You get a folder
+   `wow-atlas-quest-router-main`; the addon is the folder **`AtlasQuestRouter`** inside it (the one with
+   `AtlasQuestRouter.toc` in it). Copy that inner folder, not the outer one.
+2. Find the game's AddOns folder. In the Battle.net app pick the game, click the ⚙ next to *Play* and choose
+   *Show in Finder* (Mac) or *Show in Explorer* (Windows). Open the game's version folder (for example
+   `_classic_era_`), then `Interface`, then `AddOns`. If `Interface` or `AddOns` does not exist yet, create it;
+   the game only makes it after the first addon is installed.
+   * Mac: `/Applications/World of Warcraft/<game folder>/Interface/AddOns/`
+   * Windows: `C:\Program Files (x86)\World of Warcraft\<game folder>\Interface\AddOns\`
+
+   Paste `AtlasQuestRouter` there, so the path ends in `.../Interface/AddOns/AtlasQuestRouter/AtlasQuestRouter.toc`.
+   Restart the game if it was open.
 3. In game, type `/dump select(4, GetBuildInfo())`. If the number is not `11507`, write it on the
    `## Interface:` line of `AtlasQuestRouter/AtlasQuestRouter.toc`.
 4. Enable **Atlas Quest Router** in the *AddOns* menu on the character select screen.
